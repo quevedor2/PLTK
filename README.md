@@ -3,6 +3,7 @@ Pughlab Toolkit (PLTK): Repository for all small analysis, plotting, preprocessi
 
 ## visualization_tools
   * **plotScatterLine()**: an R function to combine violin plots, boxplots, and stripcharts between multiple groups and visually link elements that span all groups  (Cindy/Rene)
+  * **plotLikelihoodRatio()**: an R function to plot the kernel density estimate of two datasets and calculate the likelihood ratio for a point estimate  (Rene)
 ## analysis_tools
 
 ## formatting_tools
