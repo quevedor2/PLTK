@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{demo.plotLikelihoodRatio}
 \alias{demo.plotLikelihoodRatio}
-\title{Visualization: demo.plotLikelihoodRatio}
+\title{Vis.demo: demo.plotLikelihoodRatio}
 \usage{
 demo.plotLikelihoodRatio()
 }

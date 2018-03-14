@@ -3,10 +3,11 @@
 #'
 #' @param gr A granges object
 #' @param binsize A set binsize (bp)
-#'
+#' @import GenomicRanges
+#' 
 #' @return \code{segs.list}: A list of genomicRanges objects for genomic regions with continuous segments smaller than binsize
 #' @examples
-#' sigClusterBreakpoints(demo, 50)
+#' sigClusterBreakpoints(PLTK::genDemoData(), 50)
 sigClusterBreakpoints <- function(gr, binsize){
   require(GenomicRanges)
   # Subsets the granges object given the specifications of st/end ranges
@@ -61,4 +62,31 @@ sigClusterBreakpoints <- function(gr, binsize){
   }
   
   return(segs.list)
+}
+
+
+
+#' cnSignature: sigBinBreakpoints
+#' @description Takes a GRanges object of segments and counts the number of breakpoints found within pre-designed genomic bins
+
+#' @param gr GRanges object of your segments
+#' @param bins GRanges object of the genome binned into set segment sizes [i.e. PLTK::bins]
+#'
+#' @return A list containing two elements:
+#'   \code{segs}: A list of granges object for the original \code{gr} placed into each \code{bins}
+#'   \code{bins}: The original \code{bins} object with an additional column in the metadata indicating number of breakpoints
+#' @export
+#' @import GenomicRanges
+#' 
+#' @examples
+#'  sigBinBreakpoints(PLTK::genDemoData(), PLTK::bins)
+sigBinBreakpoints <- function(gr, bins){
+  require(GenomicRanges)
+  olaps <- GenomicRanges::findOverlaps(query = gr, subject = bins)
+  idx <- factor(subjectHits(olaps), levels=seq_len(subjectLength(olaps)))
+  
+  split.bins <- splitAsList(gr[queryHits(olaps)], idx)
+  elementMetadata(bins)$binnedBP <- sapply(split.bins, length)
+  return(list("segs"=split.bins,
+              "bins"=bins))
 }

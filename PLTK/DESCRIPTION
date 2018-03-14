@@ -1,10 +1,20 @@
 Package: PLTK
-Title: What the Package Does (one line, title case)
+Title: Pughlab Toolkit (PLTK)
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: person("Rene", "Quevedo", email = "quevedor2@gmail.com", role = "cre")
+    person("Cindy", "Yang", email = "first.last@example.com", role = "cre")
+    person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Description: Repository for all small analysis, plotting, preprocessing, and formatting scripts.
 Depends: R (>= 3.3.2)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
+BugReports: https://github.com/pughlab/PLTK/issues
+Imports: 
+  AnnotationDbi,
+  TxDb.Hsapiens.UCSC.hg19.knownGene,
+  GenomicRanges,
+  org.Hs.eg.db,
+  scales,
+  vioplot

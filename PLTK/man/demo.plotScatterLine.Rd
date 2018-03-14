@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{demo.plotScatterLine}
 \alias{demo.plotScatterLine}
-\title{Visualization: demo.plotScatterLine}
+\title{Vis.demo: demo.plotScatterLine}
 \usage{
 demo.plotScatterLine()
 }

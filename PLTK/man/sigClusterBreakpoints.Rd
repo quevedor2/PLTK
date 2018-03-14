@@ -18,5 +18,5 @@ sigClusterBreakpoints(gr, binsize)
 Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size. Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
 }
 \examples{
-sigClusterBreakpoints(demo, 50)
+sigClusterBreakpoints(PLTK::genDemoData(), 50)
 }

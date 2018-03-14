@@ -11,9 +11,9 @@ devtools::build(test.package)
 
 install.packages("~/git/PLTK/PLTK_0.0.0.9000.tar.gz",
                  repos = NULL, type="source")
-
-
 library(PLTK)
 
+
 demo <- genDemoData()
-sigClusterBreakpoints(demo)
+sigClusterBreakpoints(demo, 50)
+sigBinBreakpoints(demo, PLTK::bins)

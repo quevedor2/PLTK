@@ -5,6 +5,8 @@
 #'
 #' @return
 #' @export
+#' @import GenomicRanges
+#' 
 #' @examples 
 #' demo <- genDemoData(404)
 genDemoData <- function(seed=404){
@@ -12,14 +14,23 @@ genDemoData <- function(seed=404){
   
   set.seed(seed=seed)
   #Generate random data
-  ends <- c(runif(n = 10, min = 0, max = 1000),
-            rnorm(10, mean=1200, sd=100),
-            runif(n = 10, min = 0, max = 1000))
-  ends <- sort(as.integer(ends))
-  starts <- c(1, ends[-length(ends)]+1)
-  intervals <- data.frame("chr"=rep("chr1", length(starts)),
-                          "start"=starts,
-                          "ends"=ends)
+  all.segs <- c(runif(n = 10, min = 0, max = 1000),
+                rnorm(10, mean=1200, sd=100),
+                runif(n = 10, min = 0, max = 1000),
+                runif(n = 3, min = 1001, max = 10000000),
+                runif(n = 10, min = 10000001, max = 20000000),
+                runif(n = 40, min = 20000001, max = 30000000))
+  
+  mkSegs <- function(data, chrid){
+    ends <- sample(x = ceiling(data), size = length(data) * 0.7, replace = FALSE)
+    ends <- sort(as.integer(ends))
+    starts <- c(1, ends[-length(ends)]+1)
+    intervals <- data.frame("chr"=rep(chrid, length(starts)),
+                            "start"=starts,
+                            "ends"=ends)
+    intervals
+  }
+  intervals <- do.call("rbind", lapply(c("chr1", "chr2", "chr3"), function(x) mkSegs(all.segs, x)))
   
   #Dataframe to Granges object
   intervals.gr <- makeGRangesFromDataFrame(intervals, 
@@ -43,7 +54,8 @@ genDemoData <- function(seed=404){
 #'
 #' @return
 #' @export
-#'
+#' @import GenomicRanges
+#' 
 #' @examples
 dataframeToGranges <- function(intdf, 
                                chr.regex="^chr(om|omosome)?$",
