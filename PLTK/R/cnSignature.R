@@ -1,30 +1,14 @@
-demo.sigClusterBreakpoints <- function(){
-  require(GenomicRanges)
-  if(!exists("path.to.git")) stop("Please define your path.to.git variable (i.e. path.to.git <- '~/git')")
-  source(file.path(path.to.git, "/PLTK/preprocessing_tools/utils.R"))
-  
-  #Generate random data
-  ends <- c(runif(n = 10, min = 0, max = 1000),
-            rnorm(10, mean=1200, sd=100),
-            runif(n = 10, min = 0, max = 1000))
-  ends <- sort(as.integer(ends))
-  starts <- c(1, ends[-length(ends)]+1)
-  intervals <- data.frame("chr"=rep("chr1", length(starts)),
-                          "start"=starts,
-                          "ends"=ends)
-  
-  #Dataframe to Granges object
-  intervals.gr <- dataframeToGranges(intervals)
-  
-  # Analysis
-  binsize <- 50
-  sigClusterBreakpoints(intervals.gr, binsize)
-}
-
-
+#' cnSignature: sigClusterBreakpoints
+#' @description Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size. Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
+#'
+#' @param gr A granges object
+#' @param binsize A set binsize (bp)
+#'
+#' @return \code{segs.list}: A list of genomicRanges objects for genomic regions with continuous segments smaller than binsize
+#' @examples
+#' sigClusterBreakpoints(demo, 50)
 sigClusterBreakpoints <- function(gr, binsize){
   require(GenomicRanges)
-  require(rlist)
   # Subsets the granges object given the specifications of st/end ranges
   mkSubGranges <- function(){
     grx <- gr[(st+1):(en+2),]
