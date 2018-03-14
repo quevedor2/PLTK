@@ -61,8 +61,8 @@ plotLikelihoodRatio <- function(groups, xmat,
     axis(side = 1)
     axis(side = 2, at = seq(0, upp.y, by=upp.y/5), labels=round(seq(0, max(dseq1$y), by=max(dseq1$y)/5), 2), las=2)
     axis(side = 4, at = seq(0, upp.y, by=upp.y/5), labels=round(seq(0, max(dseq2$y), by=max(dseq2$y)/5), 2), las=2)
-    lines(dseq1$x, dseq1$y * scale.val, col=alpha(f1col, 0.6), yaxt='n', ...)
-    lines(dseq2$x, dseq2$y * scale.val, col=alpha(f2col, 0.6), yaxt='n', ...)
+    lines(x = dseq1$x, y = dseq1$y * scale.val, col=scales::alpha(f1col, 0.6), yaxt='n', ...)
+    lines(dseq2$x, dseq2$y * scale.val, col=scales::alpha(f2col, 0.6), yaxt='n', ...)
     text(x=rep(xrange['Min.'], 2), y=c(upp.y+0.2, low.y), adj=0,
          labels=names(groups), col=c(f1col, f2col))
     
@@ -103,13 +103,13 @@ plotLikelihoodRatio <- function(groups, xmat,
     if(addSegments){
       x.width <- (xrange['Max.'] - xrange['Min.']) * 0.01
       rect(xleft = x - x.width, ybottom = 0, xright = x, ytop = (p1 * scale.val), 
-           col = alpha(f1col,0.5), border = NA)
+           col = scales::alpha(f1col,0.5), border = NA)
       rect(xleft = x, ybottom = 0, xright = x + x.width, ytop = (p2 * scale.val), 
-           col = alpha(f2col,0.5), border = NA)
+           col = scales::alpha(f2col,0.5), border = NA)
     }
   }
   
   return(list('ks'=ks.pval,
               'bf'=do.call("cbind", bf.vals)))
 }
-demo.plotLikelihoodRatio()
+

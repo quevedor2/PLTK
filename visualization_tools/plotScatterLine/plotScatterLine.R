@@ -28,7 +28,9 @@ plotScatterLine <- function (groups,
                              withBox = F, 
                              vio.col = "lightblue", 
                              connect = T,
+                             show.all=T,
                              ...){
+  require(scales)
   if(is.matrix(groups) || is.data.frame(groups)){
     groups <- as.matrix(groups)
     tmp <- list()
@@ -40,7 +42,8 @@ plotScatterLine <- function (groups,
   if (length(y.lim)<2) { y.lim = c(min(unlist(groups), na.rm=T)-0.1,
                                    max (unlist(groups), na.rm = T)+ (max (unlist(groups), na.rm = T)*.20)) }
   
-  plot(0,type='n',axes=FALSE,ann=FALSE, xlim = c(0, (length(groups)+2)), ylim = y.lim)
+  par(las=1,bty="l")  ## my preferred setting
+  plot(0,type='n',axes=FALSE,ann=FALSE, xlim = c(0, (length(groups)+2)), ylim = y.lim, ...)
   title (font = 2, cex.main = 1.5, cex.lab = 1.5, ...)
   axis (side = 1, lwd = 2, labels = F, lwd.tick=0)
   axis (side = 1, at = seq(1, length(groups)), labels = names(groups), cex.axis = 1.5, font = 2, lwd = 2)
@@ -70,12 +73,21 @@ plotScatterLine <- function (groups,
   lapply(seq_along(groups), function(cnt.x) addMedianSeg(cnt.x, groups[[cnt.x]]))
   
   if (connect){
+    # Connects the segments
+    segConnect <- function(groups){
+      seg.connect <- do.call(cbind, groups)
+      seg.connect <- seg.connect[which(complete.cases(seg.connect)), , drop=FALSE]
+      seg.connect
+    }
+    g.seg.connect <- segConnect(groups)
+    
     # Formats links between groups for specific targets or not
     if(!any(is.na(targ.pnt))){
       groups <- lapply(groups, function(x) x[targ.pnt])
+      seg.connect <- segConnect(groups)
+    } else {
+      seg.connect <- g.seg.connect
     }
-    seg.connect <- do.call(cbind, groups)
-    seg.connect <- seg.connect[which(complete.cases(seg.connect)), , drop=FALSE]
     
     # Link all segments together using a line, returns the top sets with biggest deltas
     linkSegs <- function(s.conn, ...){
@@ -87,7 +99,8 @@ plotScatterLine <- function (groups,
         max(abs(diff(as.numeric(e.row))))
       })
     }
-    max.diff <- linkSegs(seg.connect, lty=1, col=alpha("black", 0.50))
+    if(show.all) max.diff <- linkSegs(g.seg.connect, lty=1, col=scales::alpha("black", 0.20))
+    max.diff <- linkSegs(seg.connect, lty=1, col=scales::alpha("black", 0.50))
 
     # Annotate the Top X changes
     if(!any(is.na(top.anno))){
@@ -110,7 +123,7 @@ plotScatterLine <- function (groups,
                    x1 = anno.xpos, y1 = anno.ypos, col = "dark grey", lty=2)
         })
       }
-      top.seg.connect <- top.seg.connect[order(top.seg.connect[,ncol(top.seg.connect)]),]
+      top.seg.connect <- top.seg.connect[order(top.seg.connect[,ncol(top.seg.connect)]),,drop=FALSE]
       if(nrow(top.seg.connect) != 0){
         annoSegs(top.seg.connect, groups)
       } else {
