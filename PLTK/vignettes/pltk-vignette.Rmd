@@ -1,0 +1,126 @@
+---
+title: "PLTK Vignette"
+author: "Rene Quevedo"
+date: "`r Sys.Date()`"
+output:  rmarkdown::render("pltk-vignette.Rmd", output_format="all")
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Generating demo data
+The function PLTK::genDemoData() takes a single seed argument and will generate a GRanges object as a demo date to work with all other functions in the PLTK package.  Currently, the demo object consists of multiple random breakpoints between 1-1000bp and fewer breakpoints between 1001-30,000,000 bp.  This is generated for chromosomes 1-3 using the UCSC seqnames.
+where the output looks as follows:
+```{r}
+PLTK::genDemoData()
+```
+---
+
+# cnSignature
+## Signature 1: sigClusterBreakpoints()
+**Purpose**: Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size.  Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
+
+**Output**: A list containing of all regions containing consecutive segments.  A cluster of continuous short-fragment segments (defined by binSize) are labelled as "Bins".  Within these Bins, the longest aggregation of consecutive segments that are still less than the binSize parameter are termed "subs".
+```{r}
+PLTK::sigClusterBreakpoints(genDemoData(), 50)
+```
+---
+
+## Signature 2: sigBinBreakpoints()
+**Purpose**: Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size.  Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
+
+**Example usage**: `sigBinBreakpoints(genDemoData(), PLTK::bins)`
+
+**Output**: A two-element list, "segs" and "bins":
+
+> segs
+
+A 322 element list, each element corresponding to one of the 10Mb bins. Within these elements are all input segments that are found within that bins. In the following example, there are 24 segments found in the first 10Mb bin of Chr1.
+```{r}
+PLTK::sigBinBreakpoints(PLTK::genDemoData(), PLTK::bins)[['segs']][[1]]
+```
+
+> bins
+
+A GRanges object for the original 10Mb bins originally created from the QDNAseq package, documented in the `data-raw/generateGenomicBins.R` code.  Appended to the elementMetadata is the column **binnedBP** corresponding to the number of segments/breakpoints in each of the 10Mb bin.
+```{r}
+PLTK::sigBinBreakpoints(PLTK::genDemoData(), PLTK::bins)[['bins']]
+```
+---
+
+
+# Helper Functions
+## getRleIdx()
+**Purpose**: An extension of the `rle()` function to include start, end, and NA indices.  Meant to make lives easier when doing an RLE on a dataframe to quickly isolate consecutive segments.
+
+**Usage**: 
+> Usage with vectors
+
+```{r}
+repetitive.sequence <- c(rep(1,5), rep(2,5), rep(3,5))
+rle.x <- PLTK::getRleIdx(repetitive.sequence)
+str(rle.x)
+
+ 
+repetitive.sequence[rle.x$start.idx[2]:rle.x$end.idx[2]]
+```
+
+> Usage with dataframes
+
+```{r}
+repetitive.sequence <- c(rep(1,5), rep(2,5), rep(3,5))
+repetitive.df <- data.frame("a"=repetitive.sequence,
+                            "b"=repetitive.sequence,
+                            "c"=repetitive.sequence)
+rle.x <- PLTK::getRleIdx(repetitive.df, col.id="a")
+str(rle.x)
+ 
+repetitive.df[rle.x$start.idx[2]:rle.x$end.idx[2],]
+```
+
+# cnTools
+## annotateSegments()
+**Purpose**: Uses a GRanges object of genes (UCSC) with the elementMetadata column **gene_ids** to annotate any given segments inputted as a GRanges object as well.  This was originally designed to work in tandem with the `getGenes()` function which extracts gene data from the BioConductor TxDb.Hsapiens.UCSC.hg19.knownGene package.  EntrezIDs are then converted to HGNC Symbols.  Other options will be built in later to convert to Ensembl.
+
+**Usage**: 
+```{r}
+PLTK::annotateSegments(PLTK::genDemoData(), PLTK::getGenes())
+```
+
+
+# Visualization
+## R: plotScatterLine()
+**Purpose**: Creates a stripchart, boxplot, or violin plot for each group and then offers the option to link changes between individual elements between groups. If rownames or a labelled vector in a list is provided, it will annotate the top X differences between groups based on taking the max difference for a given element across all groups.
+
+**Inputs**: Labelled dataframe, matrix, or list for 2 or more groups (NAs handled) 
+```
+       A     B     C
+d5 0.168 0.939 0.615
+e3 0.681 0.772 0.086
+q4 0.813 0.001 0.189
+m1 0.661 0.155 0.757
+q3 0.472 0.027    NA
+u1 0.241 0.351 0.465
+```
+or
+```
+List of 3
+ $ A: num [1:100] 0.168 0.681 0.813 0.661 0.472 0.241 0.259 0.031 0.721 0.719 ...
+ $ B: num [1:100] 0.939 0.772 0.001 0.155 0.027 0.351 0.301 0.478 0.854 0.857 ...
+ $ C: num [1:100] 0.615 0.086 0.189 0.757 NA 0.465 0.604 0.762 0.315 0.998 ...
+```
+
+**Output**:
+```{r}
+PLTK::demo.plotScatterLine()
+```
+
+## R: plotLikelihoodRatio()
+**Purpose**: Creates a KDE curve for two datasets and calculates the likelihood ratio between the curves by calculating the natural log-ratio of point-probability estimates between the two datasets.  Originally used to quantify the differences in drug-sensitivity for a given cell line (REH) between two datasets (CCLE and GDSC) for paclitaxel.
+
+**Output**:
+```{r}
+PLTK::demo.plotLikelihoodRatio()
+```
+

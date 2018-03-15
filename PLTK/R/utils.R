@@ -53,7 +53,6 @@ genDemoData <- function(seed=404){
 #' @param ... 
 #'
 #' @return
-#' @export
 #' @import GenomicRanges
 #' 
 #' @examples

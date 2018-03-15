@@ -4,6 +4,7 @@
 #' @param gr A granges object
 #' @param binsize A set binsize (bp)
 #' @import GenomicRanges
+#' @export
 #' 
 #' @return \code{segs.list}: A list of genomicRanges objects for genomic regions with continuous segments smaller than binsize
 #' @examples
