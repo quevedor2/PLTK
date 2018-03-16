@@ -9,18 +9,21 @@
 #' @export
 #'
 #' @examples
-runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins){
+runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
+                            gap=PLTK::hg19.centromeres, gap.type='centromeres'){
   sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx){
     sample.sig.list <- list()
     sample.gr <- collapseSample(gr, sample.idx)
     sample.id <- colnames(elementMetadata(gr))[sample.idx]
     sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize)
     sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins)
+    sample.sig.list[['gap.dist']] <- sigGapDist(sample.gr, gap = gap, gap.type = gap.type)
     sample.sig.list
   })
   sig.list
 }
 
+#----------------------------------------------------------------------------------------
 #' cnSignature: sigClusterBreakpoints
 #' @description Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size. Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
 #'
@@ -89,7 +92,7 @@ sigClusterBreakpoints <- function(gr, binsize){
 }
 
 
-
+#----------------------------------------------------------------------------------------
 #' cnSignature: sigBinBreakpoints
 #' @description Takes a GRanges object of segments and counts the number of breakpoints found within pre-designed genomic bins
 
@@ -113,4 +116,47 @@ sigBinBreakpoints <- function(gr, bins){
   elementMetadata(bins)$binnedBP <- sapply(split.bins, length)
   return(list("segs"=split.bins,
               "bins"=bins))
+}
+
+
+#----------------------------------------------------------------------------------------
+#' cnSignature: Distance from Centromeres or Telomeres
+#'
+#' @param gr [GRanges]: GRanges object
+#' @param gap.type [Character]: Either "centromeres" or "telomeres"
+#' @param gap [GRanges]: GRanges gap data, either PLTK::centromeres or PLTK::telomeres
+#'
+#' @return
+#' @export
+#'
+#' @examples
+sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', normalize=FALSE, verbose=FALSE){
+  gap.dist <- lapply(as.character(seqnames(gr)@values), function(each.chr){
+    gr.chr <- gr[seqnames(gr) == each.chr]
+    gap.chr <- gap[seqnames(gap) == each.chr]
+    
+    centromere.chr <- PLTK::hg19.centromeres[seqnames(PLTK::hg19.centromeres) == each.chr]
+    cytoband.chr <- PLTK::hg19.cytobands[seqnames(PLTK::hg19.cytobands) == each.chr]
+    
+    p.arm <- which((end(gr.chr) - start(centromere.chr)) < 0)
+    q.arm <- which((start(gr.chr) - end(centromere.chr)) > 0)
+    switch(gap.type,
+           centromeres={
+             if(verbose) print("Telomeres")
+             p.dist.from.breakpoint <- start(gap.chr) - end(gr.chr[p.arm,])
+             q.dist.from.breakpoint <- start(gr.chr[q.arm,])  - end(gap.chr)
+           },
+           telomeres={
+             if(verbose) print("Telomeres")
+             p.dist.from.breakpoint <- start(gr.chr[p.arm,]) - end(sort(gap.chr))[1]
+             q.dist.from.breakpoint <- start(sort(gap.chr))[2] - end(gr.chr[q.arm,])
+           },
+           stop="Unknown gap type.  Must be either 'centromeres' or 'telomeres'")
+    all.dist <- c(p.dist.from.breakpoint, q.dist.from.breakpoint)
+    if(normalize) all.dist <- (all.dist / max(end(cytoband.chr)))
+    
+    return(all.dist)
+  })
+ names(gap.dist) <- seqnames(gr)@values
+ gap.dist
 }
