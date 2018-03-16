@@ -18,6 +18,7 @@ runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
     sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize)
     sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins)
     sample.sig.list[['gap.dist']] <- sigGapDist(sample.gr, gap = gap, gap.type = gap.type)
+    sample.sig.list[['seg.size']] <- sigSegSize(sample.gr)
     sample.sig.list
   })
   sig.list
@@ -190,3 +191,48 @@ sigSegSize <- function(gr, normalize=FALSE){
   return(segl)
 }
 
+#----------------------------------------------------------------------------------------
+#' cnSignature: All copy numbers
+#' @description Calculates the copy numbers in the sample copy-number data with the option to scale it based on the size of the segment
+#'
+#' @param gr [GRanges]: GRanges object
+#' @param weight [Boolean]: Weight the copy-number for a segment based on the size of the segment
+#' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
+#'
+#' @return Dataframe of copy-number values for each chromosome
+#' @export
+#' @import plyr
+#'
+#' @examples sigCopyNumber(gr, weight=TRUE, normalize=TRUE)
+sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE){
+  suppressPackageStartupMessages(require(plyr))
+  if(length(elementMetadata(gr)) == 0) stop("Copy-number data per sample is required to be stored in elementMetadata() of the GRanges object")
+  if(!all(elementMetadata(gr)[,1] %% 1 == 0, na.rm = TRUE)) stop("This signature requires all copy-number data to be absolute copy-states/integers.  Please ensure no log2ratios are used.")
+  
+  copystate <- lapply(as.character(seqnames(gr)@values), function(each.chr){
+    cytoband.chr <- PLTK::hg19.cytobands[seqnames(PLTK::hg19.cytobands) == each.chr]
+    gr.chr <- gr[seqnames(gr) == each.chr]
+    
+    # Get all copy-states int he elementMetadata
+    copy.states <- na.omit(unique(elementMetadata(gr.chr)[,1]))
+    # Cycles through and counts (+ weights) each copy-state based on number of segments (+ segment length)
+    copy.states <- sapply(copy.states, function(each.copy.state){
+      copy.idx <- (elementMetadata(gr.chr)[,1] == each.copy.state)
+      cs.df <- data.frame("copy.state"=each.copy.state, "count"=sum(copy.idx, na.rm=TRUE))
+      if(weight) cs.df <- data.frame("copy.state"=each.copy.state, "count"=sum(width(gr.chr[which(copy.idx), ])))
+      cs.df
+    })
+    
+    # Optional normalizing based on size of chromosome
+    if(normalize && !(weight)) warning("It is STRONGLY advised not to normalize without weighing by the segment size first.")
+    if(normalize) copy.states['count',] <- sapply(copy.states['count',], function(x) x / max(end(cytoband.chr)))
+    
+    colnames(copy.states) <- as.character(copy.states['copy.state',])
+    copy.states <- copy.states[-grep('copy.state', rownames(copy.states)), ,drop=FALSE]
+    as.data.frame(copy.states)
+  })
+  copystate <- rbind.fill(copystate)
+  rownames(copystate) <- seqnames(gr)@values
+  
+  return(copystate)
+}
