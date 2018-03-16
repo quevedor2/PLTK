@@ -121,15 +121,18 @@ sigBinBreakpoints <- function(gr, bins){
 
 #----------------------------------------------------------------------------------------
 #' cnSignature: Distance from Centromeres or Telomeres
+#' @description Calculates the distances from the closest breakpoint end to the telomere or centromere.  Offers the option to normalize by the size of the chromosome.
 #'
 #' @param gr [GRanges]: GRanges object
 #' @param gap.type [Character]: Either "centromeres" or "telomeres"
 #' @param gap [GRanges]: GRanges gap data, either PLTK::centromeres or PLTK::telomeres
+#' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
+#' @param verbose [Boolean]: Prints out extra debug info
 #'
-#' @return
+#' @return List of distances from the telomere or centromere
 #' @export
 #'
-#' @examples
+#' @examples sigGapDist(demo, gap.type = "telomeres", gap = PLTK::hg19.telomeres, normalize=TRUE)
 sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', normalize=FALSE, verbose=FALSE){
   gap.dist <- lapply(as.character(seqnames(gr)@values), function(each.chr){
     gr.chr <- gr[seqnames(gr) == each.chr]
@@ -160,3 +163,30 @@ sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', n
  names(gap.dist) <- seqnames(gr)@values
  gap.dist
 }
+
+
+#----------------------------------------------------------------------------------------
+#' cnSignature: Segment sizes
+#' @description Calculates the size of all the segments in the GRanges object.  OFfers the option to normalize by chromosome size.
+#'
+#' @param gr [GRanges]: GRanges object
+#' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
+#'
+#' @return List of segment sizes
+#' @export
+#'
+#' @examples sigSegSize(demo, normalize=TRUE)
+sigSegSize <- function(gr, normalize=FALSE){
+  segl <- lapply(as.character(seqnames(gr)@values), function(each.chr){
+    cytoband.chr <- PLTK::hg19.cytobands[seqnames(PLTK::hg19.cytobands) == each.chr]
+    
+    gr.chr <- gr[seqnames(gr) == each.chr]
+    segl.chr <- diff(end(gr.chr))
+    
+    if(normalize) segl.chr <- (segl.chr / max(end(cytoband.chr)))
+    segl.chr
+  })
+  names(segl) <- seqnames(gr)@values
+  return(segl)
+}
+sigSegSize(demo, normalize=FALSE)
