@@ -1,3 +1,26 @@
+#' cnSignature: Wrapper to run all CN Signatures
+#' @description A Wrapper function to run all copy-number GRanges objects through the CN signature functions
+#'
+#' @param gr [GRanges]: GRanges object with copy-number in the elementMetadata().  Tested on output from convertToGr()
+#' @param binsize [Integer]: Maximum size of segments to be considered in a small-CN cluster [Default: 1000000]
+#' @param bins [GRanges]: A pre-made GRanges object where the genome is binned into smaller segment [Default: PLTK::bins]
+#'
+#' @return [List]: List of all signatures List[[each sample]][[Signature1]]
+#' @export
+#'
+#' @examples
+runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins){
+  sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx){
+    sample.sig.list <- list()
+    sample.gr <- collapseSample(gr, sample.idx)
+    sample.id <- colnames(elementMetadata(gr))[sample.idx]
+    sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize)
+    sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins)
+    sample.sig.list
+  })
+  sig.list
+}
+
 #' cnSignature: sigClusterBreakpoints
 #' @description Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size. Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
 #'
