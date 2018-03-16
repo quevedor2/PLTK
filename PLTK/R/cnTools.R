@@ -1,4 +1,5 @@
-#' cnTools: getGenes
+#----------------------------------------------------------------------------------------
+#' cnTools: get Genes in TxDb.Hsapiens.UCSC.hg19.knownGene
 #' @description Gets the genes from UCSC hg19 TxDb knownGene
 #'
 #' @return A Granges object containing strand-specific genes with EntrezIDs
@@ -17,11 +18,11 @@ getGenes <- function(){
   genes
 }
 
-
-#' cnTools: annotateSegments
+#----------------------------------------------------------------------------------------
+#' cnTools: annotate GRanges segments
 #'
-#' @param cn.data A dataframe that can be converted to GRanges object easily, or a granges object
-#' @param genes A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()
+#' @param cn.data [Data.frame]: A dataframe that can be converted to GRanges object easily, or a granges object
+#' @param genes [GRanges]: A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()
 #'
 #' @return Annotated GRanges object with gene ids for the input GRanges
 #' @export
@@ -55,18 +56,17 @@ annotateSegments <- function(cn.data, genes){
   return(gr0)
 }
 
-
-
-
-
+#----------------------------------------------------------------------------------------
 #' cnTools: Aggregate Genomic Ranges
+#' @description Because different samples have different segmentations, this function attempts to create a unified matrix with the fewest number of segments needed to represent all copy-number segments from all samples.  This allows for the elementMetadata() to store the associate copy-number values for those samples all in one matrix.
 #'
-#' @param list.gr 
+#' @param list.gr [GRangesList]: a list of granges objects or GRangesList
 #'
-#' @return
+#' @return A single GRanges object with each row of the elementMetadata() containing all the samples copy-number values for that segment
+#' @import GenomicRanges
 #' @export
 #'
-#' @examples
+#' @examples aggregateGr(list(gr1, gr2))
 aggregateGr <- function(list.gr){
   # Loop to combine the first two GRanges object of the list, save it to the first element of the list, pop out the second element
   while(length(list.gr) >= 2){
@@ -98,29 +98,33 @@ aggregateGr <- function(list.gr){
   list.gr[[1]]
 }
 
-#' cnTools: Convert .seg to GRanges
+#----------------------------------------------------------------------------------------
+#' cnTools: Converts the .seg file to a GRanges object
+#' @description Uses the standard seg inputs (https://software.broadinstitute.org/software/igv/sites/cancerinformatics.org.igv/files/linked_files/example.seg) and converts it into a list of GRanges object with the seg.mean column being the copy-number data stored in elementMetadata()
 #'
-#' @param seg 
-#' @param col.id 
+#' @param seg A dataframe containing the seg file, with headers
+#' @param col.id Name of sample [Default: SampleX]
 #'
-#' @return
-#' @export
+#' @return A Granges object with one column in the element Metadata() corresponding to the sample
+#' @import GenomicRanges
 #'
 #' @examples
-segfileToGr <- function(seg, col.id){
+segfileToGr <- function(seg, col.id='SampleX'){
+  suppressPackageStartupMessages(require(GenomicRanges))
   gr.tmp <- makeGRangesFromDataFrame(seg, keep.extra.columns=FALSE)
   elementMetadata(gr.tmp)$seg.mean <- seg$seg.mean
   colnames(elementMetadata(gr.tmp)) <- col.id
   gr.tmp
 }
 
+#----------------------------------------------------------------------------------------
 #' cnTools: Convert Log2Ratio to Amp/Del
+#' @description A temporary helper function to truncate log2ratios at 0.5 and turn them into Amp (1) or Del (-1)
 #'
-#' @param seg.gr 
-#' @param cn.thresh 
+#' @param [GRanges]: seg.gr A GRanges object with copy-number log2ratios in elementMetadata() columns
+#' @param [Integer]: cn.thresh A log2ratio cutoff to indicate gain or loss
 #'
 #' @return
-#' @export
 #'
 #' @examples
 assignAmpDel <- function(seg.gr, cn.thresh=0.5){
@@ -139,20 +143,25 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5){
   seg.gr
 }
   
+#----------------------------------------------------------------------------------------
 #' cnTools: Convert to GRanges Wrapper
+#' @description A wrapper to take any kind of copy-number data and convert it to a GRanges object with elementMetadata() storing a matrix of all copy-number values
 #'
-#' @param cnsegs 
-#' @param type 
+#' @param cnsegs Copy-number data: QDNAseq object, or .seg data frame
+#' @param [Character]: type Specification of data type: "QDNAseq", or "segfile"
 #'
-#' @return
+#' @return A Granges object with all samples combined into one singular matrix.  All copy-number values are stored in elementMetadata()
+#' @import GenomicRanges QDNAseq
 #' @export
 #'
 #' @examples
 convertToGr <- function(cnsegs, type='Unknown'){
   if(class(cnsegs) == 'QDNAseqCopyNumbers' || type == 'QDNAseq'){
+    suppressPackageStartupMessages(require(QDNAseq))
     gr <- makeGRangesFromDataFrame(cnsegs@featureData@data, keep.extra.columns=FALSE)
     elementMetadata(gr) <- QDNAseq:::calls(cnsegs)[,1:4]
   } else if(is.data.frame(cnsegs) && type == 'segfile'){
+    suppressPackageStartupMessages(require(GenomicRanges))
     warning("SEGFILE: Assuming segfile standard outlined at https://software.broadinstitute.org/software/igv/sites/cancerinformatics.org.igv/files/linked_files/example.seg")
     cnsegs.id <- split(cnsegs, f=cnsegs$ID)
     
@@ -183,9 +192,20 @@ convertToGr <- function(cnsegs, type='Unknown'){
   gr
 }
 
-
-
-cnMetrics <- function(analysis=NA, ...){
+#----------------------------------------------------------------------------------------
+#' cnTools: Wrapper for copy-number metrics
+#' @description A wrapper to run copy-number analysis on a GRanges copy-number dataset with copy-number values stored in elementMetadata().  These metrics include calculating genomic fraction and wGII scores (bp) for gains, losses, or any CN-abberation.
+#'
+#' @param [GRanges]: gr GRanges object
+#' @param [Character]: cn.stat 'all' for all CN-aberrations or 'gain' or 'loss'
+#' @param [Integer]: copy.neutral Integer specifying what a copy-neutral value is [default = 0]
+#' @param [Character]: analysis The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)
+#'
+#' @return
+#' @export
+#'
+#' @examples
+cnMetrics <- function(analysis=NA, gr, cn.stat='all', copy.neutral=0){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
   
   switch(analysis,
@@ -195,6 +215,18 @@ cnMetrics <- function(analysis=NA, ...){
   )
 }
 
+#----------------------------------------------------------------------------------------
+#' cnTools: Wrapper for copy-number metrics
+#' @description Calculates Genomic Fraction or wGII scores. Refer to cnMetrics for more detail.
+#'
+#' @param analysis [Character]: passed in from cnMetrics
+#' @param gr [GRanges]: passed in from cnMetrics
+#' @param [Character]: cn.stat passed in from cnMetrics
+#' @param ... 
+#'
+#' @return
+#'
+#' @examples
 cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
   getGFdata <- function(each.cn, copy.neutral=0, ...){
@@ -245,4 +277,43 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
          },
          stop("analysis incorrectly specified"))
 
+}
+
+#----------------------------------------------------------------------------------------
+#' cnTools: Wrapper for copy-number metrics
+#' @description Takes an individual sample and reduces GRanges ranges where copy-number does not change between subsequent ranges
+#'
+#' @param gr [GRanges]: GRanges object with copy-number in elementMetadata()
+#' @param sample.idx [Integer]: the sample index in the metadata
+#' @param na.rm [Boolean]: Remove NA or keep NAs in the reduction
+#'
+#' @return
+#'
+#' @examples
+collapseSample <- function(gr, sample.idx, na.rm=TRUE){
+  if(sample.idx > ncol(elementMetadata(gr))) stop("Please specify the index of a sample in elementMetadata()")
+  if(is.null(sample.idx)) stop("Cannot collapse GRanges without the index of your sample in elementMetadta()")
+  
+  # Parse out CN information for the sample
+  each.sample <- elementMetadata(gr)[,sample.idx]
+  sample.id <- colnames(elementMetadata(gr))[sample.idx]
+  
+  # Reduce continuous segments into a single segment based on rle
+  rle.sample <- getRleIdx(each.sample)
+  reduce.gr <- sapply(seq_along(rle.sample$start.idx), function(each_rle){
+    if(!(na.rm && !(rle.sample$na.stat[each_rle]))){
+      reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
+    } else if(!na.rm){
+      reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
+    }
+  })
+  
+  # Reassign copy-number values to the reduced GRanges object
+  reduce.gr <-  Reduce(c, reduce.gr[!sapply(reduce.gr, is.null)])
+  cn.values <- rle.sample$values
+  if(na.rm) cn.values <- as.integer(na.omit(cn.values))
+  elementMetadata(reduce.gr)$x <- cn.values
+  colnames(elementMetadata(reduce.gr)) <- sample.id
+  
+  reduce.gr
 }
