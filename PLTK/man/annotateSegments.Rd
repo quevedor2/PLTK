@@ -2,20 +2,20 @@
 % Please edit documentation in R/cnTools.R
 \name{annotateSegments}
 \alias{annotateSegments}
-\title{cnTools: annotateSegments}
+\title{cnTools: annotate GRanges segments}
 \usage{
 annotateSegments(cn.data, genes)
 }
 \arguments{
-\item{cn.data}{A dataframe that can be converted to GRanges object easily, or a granges object}
+\item{cn.data}{[Data.frame]: A dataframe that can be converted to GRanges object easily, or a granges object}
 
-\item{genes}{A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()}
+\item{genes}{[GRanges]: A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()}
 }
 \value{
 Annotated GRanges object with gene ids for the input GRanges
 }
 \description{
-cnTools: annotateSegments
+cnTools: annotate GRanges segments
 }
 \examples{
 annotateSegments(PLTK::genDemoData(), PLTK::getGenes())

@@ -31,4 +31,8 @@ gr1 <- convertToGr(copyNumbersCalled)
 gr2 <- convertToGr(seg, type='segfile')
 gr <- aggregateGr(list(gr1, gr2))
 gr <- gr2
-cnMetrics(analysis="wgii", gr=gr, cn.stat='all', copy.neutral=0)
+sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr, cn.stat=x, copy.neutral=0))
+sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr, cn.stat=x, copy.neutral=0))
+all.sigs <- runCnSignatures(gr=gr, binsize=50000, bins=PLTK::bins)
+
+

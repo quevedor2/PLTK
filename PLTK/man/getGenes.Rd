@@ -2,7 +2,7 @@
 % Please edit documentation in R/cnTools.R
 \name{getGenes}
 \alias{getGenes}
-\title{cnTools: getGenes}
+\title{cnTools: get Genes in TxDb.Hsapiens.UCSC.hg19.knownGene}
 \usage{
 getGenes()
 }
