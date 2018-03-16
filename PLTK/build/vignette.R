@@ -22,10 +22,13 @@ demo <- genDemoData()
 sigClusterBreakpoints(demo, 50)
 sigBinBreakpoints(demo, PLTK::bins)
 
-
-seg <- read.table("/mnt/work1/users/home2/quever/example.seg", header = TRUE,
-                  check.names = FALSE, stringsAsFactors = )
+example <- "/mnt/work1/users/home2/quever/example.seg"
+example <- "~/Desktop/example.seg"
+seg <- read.table(example, header = TRUE,
+                  check.names = FALSE, stringsAsFactors = FALSE)
 
 gr1 <- convertToGr(copyNumbersCalled)
 gr2 <- convertToGr(seg, type='segfile')
 gr <- aggregateGr(list(gr1, gr2))
+gr <- gr2
+cnMetrics(analysis="wgii", gr=gr, cn.stat='all', copy.neutral=0)

@@ -27,7 +27,7 @@ sigClusterBreakpoints <- function(gr, binsize){
   
   # Cycle through all consecutive segments less than a set binsize [default=50]
   for(each.idx in which(as.logical(posidx$values))){
-    tbin <- 100   # Ridiculous large number to instantiate
+    tbin <- binsize*10000   # Ridiculous large number to instantiate
     bin.cnt <- 1  # Labelling of sub-fragments with larger bin
     b.id <- paste0("bin", each.idx)
     segs.per.bin <- c()
@@ -56,7 +56,7 @@ sigClusterBreakpoints <- function(gr, binsize){
       st <- en + 2
       en <- posidx$end.idx[each.idx]
       bin.cnt <- bin.cnt + 1
-      tbin <- 100
+      tbin <- binsize*10000
     }
     
     print(segs.per.bin)
