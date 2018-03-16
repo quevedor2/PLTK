@@ -189,4 +189,4 @@ sigSegSize <- function(gr, normalize=FALSE){
   names(segl) <- seqnames(gr)@values
   return(segl)
 }
-sigSegSize(demo, normalize=FALSE)
+
