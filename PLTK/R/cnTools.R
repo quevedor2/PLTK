@@ -130,9 +130,9 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5){
     amp.idx <-  x > amp
     del.idx <-  x < del
     neutral.idx <- (x >= del) & (x <= amp)
-    x[amp.idx] <- 3
-    x[del.idx] <- 1
-    x[neutral.idx] <- 2
+    x[amp.idx] <- 1
+    x[del.idx] <- -1
+    x[neutral.idx] <- 0
     x
   })
   elementMetadata(seg.gr) <- as.data.frame(seg.gr.meta)
@@ -181,4 +181,68 @@ convertToGr <- function(cnsegs, type='Unknown'){
   seq.ids <- gsub("chr24", "chrY", gsub("chr23", "chrX", seqlevels(gr)))
   gr <- renameSeqlevels(gr,seq.ids)
   gr
+}
+
+
+
+cnMetrics <- function(analysis=NA, ...){
+  #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
+  
+  switch(analysis,
+         gf=cnGenomeFraction(analysis, ...),
+         wgii=cnGenomeFraction(analysis, ...),
+         stop("analysis not recognized")
+  )
+}
+
+cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
+  # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
+  getGFdata <- function(each.cn, copy.neutral=0, ...){
+    na.idx <- (is.na(each.cn))
+    gain.idx <- (each.cn > copy.neutral)
+    loss.idx <- (each.cn < copy.neutral)
+    neutral.idx <- (each.cn == copy.neutral)
+    
+    total.genome.size <- sum(as.numeric(width(gr)))
+    non.na.genome.size <- sum(as.numeric(width(gr[which(!na.idx),])))
+    gain.genome.size <- sum(as.numeric(width(gr[which(gain.idx),])))
+    loss.genome.size <- sum(as.numeric(width(gr[which(loss.idx),])))
+    neutral.genome.size <- sum(as.numeric(width(gr[which(neutral.idx),])))
+    matrix(c("total"=total.genome.size,
+             "non.na"=non.na.genome.size,
+             "gain"=gain.genome.size,
+             "loss"=loss.genome.size,
+             "all"=(gain.genome.size + loss.genome.size),
+             "neutral"=neutral.genome.size), 
+           ncol=1)
+  }
+  
+  # Cycles through each chromosome to get all the CN data for all samples
+  chr.gf.data <- lapply(seqnames(gr)@values, function(chr.id){
+    gr.chr <- gr[which(seqnames(gr) == chr.id),]
+    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
+    rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
+    gf.chr
+  })
+  names(chr.gf.data) <- seqnames(gr)@values
+  
+  # Goes through all CN data to give back Genomic Fraction or wGII scores
+  cn.row.idx <- grep(cn.stat, rownames(chr.gf.data[[1]]))
+  total.row.idx <- grep("non.na", rownames(chr.gf.data[[1]]))
+  switch(analysis,
+         gf={
+           cnstat.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE])
+           total.mat <- sapply(chr.gf.data, function(x) x[total.row.idx,,drop=FALSE])
+           gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(total.mat, 1, sum, na.rm=TRUE)
+           names(gf.scores) <- colnames(chr.gf.data[[1]])
+           gf.scores
+         },
+         wgii={
+           wgii.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE] / x[total.row.idx,,drop=FALSE])
+           wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
+           names(wgii.scores) <- colnames(chr.gf.data[[1]])
+           wgii.scores
+         },
+         stop("analysis incorrectly specified"))
+
 }
