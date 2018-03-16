@@ -21,6 +21,12 @@ library(PLTK)
 demo <- genDemoData()
 sigClusterBreakpoints(demo, 50)
 sigBinBreakpoints(demo, PLTK::bins)
+sigGapDist(demo, gap.type = "telomeres", gap = PLTK::hg19.telomeres)
+sigGapDist(demo, gap.type = "telomeres", gap = PLTK::hg19.telomeres, normalize=TRUE)
+sigGapDist(demo, gap.type = "centromeres", gap = PLTK::hg19.centromeres)
+sigGapDist(demo, gap.type = "centromeres", gap = PLTK::hg19.centromeres, normalize=TRUE)
+sigSegSize(demo)
+sigSegSize(demo, normalize=FALSE)
 
 example <- "/mnt/work1/users/home2/quever/example.seg"
 example <- "~/Desktop/example.seg"
