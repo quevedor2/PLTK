@@ -26,7 +26,10 @@ sigGapDist(demo, gap.type = "telomeres", gap = PLTK::hg19.telomeres, normalize=T
 sigGapDist(demo, gap.type = "centromeres", gap = PLTK::hg19.centromeres)
 sigGapDist(demo, gap.type = "centromeres", gap = PLTK::hg19.centromeres, normalize=TRUE)
 sigSegSize(demo)
-sigSegSize(demo, normalize=FALSE)
+sigSegSize(demo, normalize=TRUE)
+sigCnChangepoint(demo, collapse.segs = TRUE)
+sigCnChangepoint(demo, collapse.segs = FALSE)
+
 
 example <- "/mnt/work1/users/home2/quever/example.seg"
 example <- "~/Desktop/example.seg"

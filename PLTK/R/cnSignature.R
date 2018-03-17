@@ -19,6 +19,7 @@ runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
     sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins)
     sample.sig.list[['gap.dist']] <- sigGapDist(sample.gr, gap = gap, gap.type = gap.type)
     sample.sig.list[['seg.size']] <- sigSegSize(sample.gr)
+    sample.sig.list[['cn.bp']] <- sigCnChangepoint(sample.gr, collapse.segs = TRUE)
     sample.sig.list
   })
   sig.list
