@@ -236,3 +236,36 @@ sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE){
   
   return(copystate)
 }
+
+
+#----------------------------------------------------------------------------------------
+#' cnSignature: Copy-number changepoints
+#' @description Calculates the copy-number change at breakpoint per chromosome
+#'
+#' @param collapse.segs [Boolean]: Whether segments with same copy-states separated by a gap with no data should be collapsed
+#' @param gr [GRanges]: GRanges object
+#'
+#' @return List containing and element for each chromosome with the copy-number changepoints at each breakpoint
+#' @export
+#'
+#' @examples sigCnChangepoint(gr, collapse.segs=FALSE)
+sigCnChangepoint <- function(gr, collapse.segs=FALSE){
+  if(length(elementMetadata(gr)) == 0) stop("Copy-number data per sample is required to be stored in elementMetadata() of the GRanges object")
+  if(!all(elementMetadata(gr)[,1] %% 1 == 0, na.rm = TRUE)) stop("This signature requires all copy-number data to be absolute copy-states/integers.  Please ensure no log2ratios are used.")
+  if(any(elementMetadata(gr)[,1] < 0, na.rm=TRUE)) warning("There are negative values in copy-number.  Values will be scaled appropriately.")
+  
+  cn.changepoints <- lapply(as.character(seqnames(gr)@values), function(each.chr){
+    cytoband.chr <- PLTK::hg19.cytobands[seqnames(PLTK::hg19.cytobands) == each.chr]
+    gr.chr <- gr[seqnames(gr) == each.chr]
+    
+    # Get all copy-states int he elementMetadata
+    cn.values <- na.omit(elementMetadata(gr.chr)[,1])
+    if(collapse.segs) cn.values <- rle(as.numeric(cn.values))$values
+    cn.values <- cn.values + abs(min(cn.values))
+    cn.change.points <- diff(cn.values)
+    cn.change.points
+  })
+  names(cn.changepoints) <- as.character(seqnames(gr)@values)
+
+  return(cn.changepoints)
+}
