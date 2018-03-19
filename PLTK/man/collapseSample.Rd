@@ -13,9 +13,6 @@ collapseSample(gr, sample.idx, na.rm = TRUE)
 
 \item{na.rm}{[Boolean]: Remove NA or keep NAs in the reduction}
 }
-\value{
-
-}
 \description{
 Takes an individual sample and reduces GRanges ranges where copy-number does not change between subsequent ranges
 }

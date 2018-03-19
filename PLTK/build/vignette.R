@@ -39,9 +39,15 @@ seg <- read.table(example, header = TRUE,
 gr1 <- convertToGr(copyNumbersCalled)
 gr2 <- convertToGr(seg, type='segfile')
 gr <- aggregateGr(list(gr1, gr2))
-gr <- gr2
+  gr <- gr2
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr, cn.stat=x, copy.neutral=0))
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr, cn.stat=x, copy.neutral=0))
 all.sigs <- runCnSignatures(gr=gr, binsize=50000, bins=PLTK::bins)
 
 
+PDIR='/mnt/work1/users/bhklab/Projects/cell_line_clonality/total_cel_list/datasets'
+tad <- file.path(PDIR, '/reference/TAD/TAD_IMR90.txt')
+tad <- read.table(tad, sep="\t", header=FALSE, col.names = c("chr", "start", "end"))
+tad.gr <- makeGRangesFromDataFrame(tad)
+seqlevelsStyle(tad.gr) <- 'UCSC'
+mapped.ref.gr <- mapGrToReference(gr, tad.gr, overlap='mode')
