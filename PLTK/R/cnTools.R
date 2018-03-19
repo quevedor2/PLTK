@@ -288,6 +288,7 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
 #' @param na.rm [Boolean]: Remove NA or keep NAs in the reduction
 #'
 #' @return
+#' @export
 #'
 #' @examples
 collapseSample <- function(gr, sample.idx, na.rm=TRUE){
@@ -316,4 +317,78 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
   colnames(elementMetadata(reduce.gr)) <- sample.id
   
   reduce.gr
+}
+
+#----------------------------------------------------------------------------------------
+#' cnTools: Maps one GRanges objec to another
+#'
+#' @param gr [GRanges]: Input GRanges object with CNdata stored in elementMetadata()
+#' @param ref.gr [GRanges]: Target GRanges object to map to
+#' @param overlap [Character]: How to handle when multiple ranges from input_GRanges are within a single bin of the target_GRanges.  Options: "mode", "mean", "null" (all are weighted by segment sizes)
+#'
+#' @return The same Target GRanges object with elementMetadata() filled in
+#' @export
+#'
+#' @examples
+mapGrToReference <- function(gr, ref.gr, overlap='mode'){
+  # Initial set-ups
+  n <- ncol(elementMetadata(gr))
+  sample.ids <- colnames(elementMetadata(gr))
+  
+  olap <- findOverlaps(ref.gr, gr, type='any', select='all', ignore.strand=TRUE)
+  qh.rle <- PLTK::getRleIdx(duplicated(queryHits(olap)))
+  
+  # Create and fill in the reference/target GRange matrix with all 1:1 mappings
+  adj.cn.mat <- matrix(ncol=n, nrow=length(ref.gr), 
+                       dimnames = list(NULL,sample.ids))
+  qh.rle.single <- which(!as.logical(qh.rle$values))
+  sapply(qh.rle.single, function(each.s){
+    olap.s <- olap[qh.rle$start.idx[each.s]:qh.rle$end.idx[each.s],]
+    olap.s <- olap.s[1:(length(olap.s)-1), ]  # The last entry is duplicated
+    adj.cn.mat[queryHits(olap.s),] <<- as.matrix(elementMetadata(gr)[subjectHits(olap.s),])
+    return(NA)
+  })
+  
+  
+  # Handles all instances where a reference/target range maps to multiple input ranges
+  qh.rle.dup <- which(as.logical(qh.rle$values))
+  for(each.dup in qh.rle.dup){
+    # Extract the query to subject duplicate mappings
+    olap.dup <- olap[(qh.rle$start.idx[each.dup]-1):qh.rle$end.idx[each.dup],]
+    ref.gr.dup <- ref.gr[unique(queryHits(olap.dup)),]
+    gr.dup <- gr[unique(subjectHits(olap.dup)),]
+    
+    # Summarize the input gr elementMetadata to condense into the reference/target GR
+    # Note: An intersect() on a GRanges object is very lengthy; working with IRanges is quicker
+    #int.dup <- sapply(seq_along(gr.dup), function(x) intersect(ref.gr.dup, gr.dup[x,]))
+    int.dup <- sapply(seq_along(gr.dup), function(x){
+      range.int <- intersect(ranges(ref.gr.dup), ranges(gr.dup[x,]))
+      GRanges(seqnames = seqnames(ref.gr.dup),
+              ranges = range.int, strand=strand(ref.gr.dup))
+    })
+    int.dup <- Reduce(c, int.dup)
+    switch(overlap,
+           mode={
+             adj.cn <- apply(as.matrix(elementMetadata(gr.dup)),2,function(each.n){
+               table.n <- table(na.omit(rep(each.n, 
+                                            (width(int.dup) / min(width(int.dup))))))
+               mode.table <- as.numeric(names(table.n[table.n == max(table.n)]))
+               mean(mode.table)
+             })
+             adj.cn <- t(as.matrix(adj.cn, nrow=1))
+           },
+           mean={
+             adj.cn <- apply(as.matrix(elementMetadata(gr.dup)),2,function(each.n){
+               weighted.mean(each.n, width(int.dup), na.rm = TRUE)
+             })
+             adj.cn <- t(as.matrix(adj.cn, nrow=1))
+           },
+           null={
+             adj.cn <- matrix(rep(NA, n), nrow=1)
+             colnames(adj.cn) <- colnames(elementMetadata(gr.dup))
+           })
+    adj.cn.mat[unique(queryHits(olap.dup)),] <-  adj.cn
+  }
+  elementMetadata(ref.gr) <- adj.cn.mat
+  ref.gr
 }
