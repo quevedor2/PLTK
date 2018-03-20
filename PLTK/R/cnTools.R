@@ -330,56 +330,94 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
 #' @export
 #'
 #' @examples
-mapGrToReference <- function(gr, ref.gr, overlap='mode'){
+mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
   # Initial set-ups
   n <- ncol(elementMetadata(gr))
   sample.ids <- colnames(elementMetadata(gr))
+  gr.st <- start(ranges(gr))
+  gr.end <- end(ranges(gr))
+  ref.st <- start(ranges(ref.gr))
+  ref.end <- end(ranges(ref.gr))
+  tmp.mat <- as.matrix(elementMetadata(gr)) # Speeds up analysis
   
+  # Setting up overlaps
   olap <- findOverlaps(ref.gr, gr, type='any', select='all', ignore.strand=TRUE)
   qh.rle <- PLTK::getRleIdx(duplicated(queryHits(olap)))
-  
-  # Create and fill in the reference/target GRange matrix with all 1:1 mappings
   adj.cn.mat <- matrix(ncol=n, nrow=length(ref.gr), 
                        dimnames = list(NULL,sample.ids))
-  qh.rle.single <- which(!as.logical(qh.rle$values))
-  sapply(qh.rle.single, function(each.s){
-    olap.s <- olap[qh.rle$start.idx[each.s]:qh.rle$end.idx[each.s],]
-    olap.s <- olap.s[1:(length(olap.s)-1), ]  # The last entry is duplicated
-    adj.cn.mat[queryHits(olap.s),] <<- as.matrix(elementMetadata(gr)[subjectHits(olap.s),])
-    return(NA)
-  })
+  simplifyRleMat <- function(rle.x, ana.type='single'){
+    # Removes all instances where the start.idx and end.idx are the same since those are duplicates
+    switch(ana.type,
+           single= rle.x.type <- which(!as.logical(rle.x$values)),
+           duplicate= rle.x.type <- which(as.logical(rle.x$values)))
+    rle.x.mat <- (do.call("cbind.data.frame", rle.x))[rle.x.type,]
+    rle.x.mat$start.idx <- as.numeric(rle.x.mat$start.idx)
+    rle.x.mat$end.idx <- as.numeric(rle.x.mat$end.idx)
+    
+    switch(ana.type,
+           single={
+             diff.int <- (rle.x.mat$end.idx - rle.x.mat$start.idx)
+             if(all(diff.int==0)) NA else rle.x.mat[diff.int!=0,]
+           },
+           duplicate=rle.x.mat)
+  }  
+  
+  # SINGLE: Fill all reference to target GRanges 1:1 mappings
+  qh.rle.single <- simplifyRleMat(qh.rle, ana.type='single')
+  if(!is.na(qh.rle.single)) {
+    apply(qh.rle.single, 1, function(each.s){
+      olap.s <- olap[as.numeric(each.s['start.idx']):(as.numeric(each.s['end.idx'])-1),]
+      adj.cn.mat[queryHits(olap.s),] <<- tmp.mat[subjectHits(olap.s),,drop=FALSE]
+      return(NA)
+    })
+  }
+  
   
   
   # Handles all instances where a reference/target range maps to multiple input ranges
-  qh.rle.dup <- which(as.logical(qh.rle$values))
-  for(each.dup in qh.rle.dup){
+  qh.rle.dup <- simplifyRleMat(qh.rle, ana.type='duplicate')
+  apply(qh.rle.dup, 1, function(each.dup){
+    print(each.dup)
+    s.idx <- as.numeric(each.dup['start.idx'])
+    e.idx <- as.numeric(each.dup['end.idx'])
+    
     # Extract the query to subject duplicate mappings
-    olap.dup <- olap[(qh.rle$start.idx[each.dup]-1):qh.rle$end.idx[each.dup],]
-    ref.gr.dup <- ref.gr[unique(queryHits(olap.dup)),]
-    gr.dup <- gr[unique(subjectHits(olap.dup)),]
+    olap.dup <- olap[(s.idx-1):e.idx,]
+    ref.idx <- unique(queryHits(olap.dup))
+    ref.gr.dup <- ref.gr[ref.idx,]
+    gr.dup <- tmp.mat[unique(subjectHits(olap.dup)), ,drop=FALSE]
     
     # Summarize the input gr elementMetadata to condense into the reference/target GR
-    # Note: An intersect() on a GRanges object is very lengthy; working with IRanges is quicker
+    # Note: intersect() on GRanges and IRanges are both VERY lengthy and suboptimal for large datasets
     #int.dup <- sapply(seq_along(gr.dup), function(x) intersect(ref.gr.dup, gr.dup[x,]))
-    int.dup <- sapply(seq_along(gr.dup), function(x){
-      range.int <- intersect(ranges(ref.gr.dup), ranges(gr.dup[x,]))
-      GRanges(seqnames = seqnames(ref.gr.dup),
-              ranges = range.int, strand=strand(ref.gr.dup))
-    })
-    int.dup <- Reduce(c, int.dup)
+    int.dup <- interval_intersection(Intervals(c(ref.st[ref.idx],
+                                                 ref.end[ref.idx])), 
+                                     Intervals(c(gr.st[subjectHits(olap.dup)],
+                                                 gr.end[subjectHits(olap.dup)])))
+    int.width <- (int.dup[,2]-int.dup[,1])
+    int.width[int.width==0] <- min(int.width[int.width!=0])
+    
     switch(overlap,
            mode={
-             adj.cn <- apply(as.matrix(elementMetadata(gr.dup)),2,function(each.n){
-               table.n <- table(na.omit(rep(each.n, 
-                                            (width(int.dup) / min(width(int.dup))))))
-               mode.table <- as.numeric(names(table.n[table.n == max(table.n)]))
+             adj.cn <- apply(gr.dup, 2, function(each.n){
+               if(length(unique(each.n, na.rm=TRUE))>1){
+                 if(mode.type=='normal'){
+                   table.n <- table(na.omit(rep(each.n, 
+                                                (int.width / min(int.width))))) 
+                 } else if(mode.type=='quick'){
+                   table.n <- table(na.omit(each.n))
+                 }
+                 mode.table <- as.numeric(names(table.n[table.n == max(table.n)]))
+               } else {
+                 mode.table <- unique(each.n, na.rm=TRUE)
+               }
                mean(mode.table)
              })
              adj.cn <- t(as.matrix(adj.cn, nrow=1))
            },
            mean={
-             adj.cn <- apply(as.matrix(elementMetadata(gr.dup)),2,function(each.n){
-               weighted.mean(each.n, width(int.dup), na.rm = TRUE)
+             adj.cn <- apply(gr.dup, 2, function(each.n){
+               weighted.mean(each.n, int.width, na.rm = TRUE)
              })
              adj.cn <- t(as.matrix(adj.cn, nrow=1))
            },
@@ -387,8 +425,8 @@ mapGrToReference <- function(gr, ref.gr, overlap='mode'){
              adj.cn <- matrix(rep(NA, n), nrow=1)
              colnames(adj.cn) <- colnames(elementMetadata(gr.dup))
            })
-    adj.cn.mat[unique(queryHits(olap.dup)),] <-  adj.cn
-  }
+    adj.cn.mat[ref.idx,] <<-  adj.cn
+  })
   elementMetadata(ref.gr) <- adj.cn.mat
   ref.gr
 }
