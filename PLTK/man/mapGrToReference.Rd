@@ -4,7 +4,7 @@
 \alias{mapGrToReference}
 \title{cnTools: Maps one GRanges objec to another}
 \usage{
-mapGrToReference(gr, ref.gr, overlap = "mode")
+mapGrToReference(gr, ref.gr, overlap = "mode", mode.type = "normal")
 }
 \arguments{
 \item{gr}{[GRanges]: Input GRanges object with CNdata stored in elementMetadata()}
