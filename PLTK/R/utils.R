@@ -120,3 +120,17 @@ getRleIdx <- function(x, col.id=NA, na.val=-100){
   
   return(rle.x)
 }
+
+#' utils: Calculates the mode
+#'
+#' @param n [Vector]: A vector of numbers elements to calculate the mode
+#'
+#' @return 
+#' @export
+#'
+#' @examples getMode(c(rep(1,5), 1:10))
+getMode <- function(n){
+  table.n <- table(na.omit(n))
+  mode.table <- as.numeric(names(table.n[table.n == max(table.n)]))
+  mode.table
+}
