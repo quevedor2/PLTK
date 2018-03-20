@@ -129,8 +129,8 @@ getRleIdx <- function(x, col.id=NA, na.val=-100){
 #' @export
 #'
 #' @examples getMode(c(rep(1,5), 1:10))
-getMode <- function(n){
-  table.n <- table(na.omit(n))
+getMode <- function(n, na.rm=FALSE){
+  if(na.rm) table.n <- table(na.omit(n)) else table.n <- table(n)
   mode.table <- as.numeric(names(table.n[table.n == max(table.n)]))
   mode.table
 }
