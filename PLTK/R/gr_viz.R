@@ -177,7 +177,8 @@ initializeGrPlot <- function(cytoband.gr, target.chr=NULL,
 #'
 #' @examples
 getGieCol <- function(gie, gie.col='black', cen.col='red', 
-                      plot.cband=TRUE, alpha.factor=2){
+                      plot.cband=TRUE, alpha.factor=2,
+                      allow.alpha=TRUE){
   require(scales)
   cen.idx <- grep("acen|gvar", gie)
   gie <-gsub("acen|gvar|stalk", 50, gie)
@@ -194,7 +195,9 @@ getGieCol <- function(gie, gie.col='black', cen.col='red',
   
   cols <- rep(gie.col, length(gie)) 
   cols[cen.idx] <- cen.col
-  scales::alpha(cols, gie)
+  cols <- scales::alpha(cols, gie)
+  if(!allow.alpha) cols <- gsub("..$", "", cols)
+  cols
 }
 
 #----------------------------------------------------------------------------------------
