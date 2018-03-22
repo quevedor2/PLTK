@@ -2,6 +2,7 @@
 
 export(addCnSegs)
 export(addCytobands)
+export(addExprScores)
 export(aggregateGr)
 export(annotateSegments)
 export(cnMetrics)

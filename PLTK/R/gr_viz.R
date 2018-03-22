@@ -18,12 +18,14 @@
 #'
 #' @examples
 plotGrMetadata <- function(gr,  plot.settings, data.type='cn', target.chr=NULL, 
-                           add.axis=TRUE, side=1, axis.marks=5, yrange=c(0,1), y.spacer=0.1, ...){
+                           add.axis=TRUE, side=1, axis.marks=5, yrange=c(0,1), y.spacer=0.1,
+                           anno.track=0, add.annotations=FALSE, ...){
   if(!is.null(target.chr)) if(!grepl("^chr", target.chr)) target.chr <- paste0('chr', target.chr)
   #if(!is.null(target.chr)) gr <- gr[seqnames(gr) == target.chr]
   
   chr.ends <- plot.settings[['cumchr']]
   xrange <- plot.settings[['xlims']]
+  
   all.chrs <- as.character(seqnames(gr)@values)
   
   if(is.null(target.chr)) {
@@ -32,20 +34,27 @@ plotGrMetadata <- function(gr,  plot.settings, data.type='cn', target.chr=NULL,
     chr.ords <- grep(paste0("^", target.chr, "$"), all.chrs)
   }
   
-  plot(0, type='n', xlim=xrange, ylim=yrange, axes=FALSE, xlab='', ylab='', ...)
+  if(add.annotations && data.type=='expr'){
+    anno.yrange  <- c(min(yrange), max(yrange) + (diff(yrange) * anno.track))
+    plot(0, type='n', xlim=xrange, ylim=anno.yrange, axes=FALSE, xlab='', ylab='', ...)
+  } else {
+    plot(0, type='n', xlim=xrange, ylim=yrange, axes=FALSE, xlab='', ylab='', ...)
+  }
+  
   for(each.chr.idx in chr.ords){
+    chr.end <- chr.ends[each.chr.idx,'ends']
     gr.chr <- gr[seqnames(gr) == all.chrs[each.chr.idx]]
     if(add.axis & !is.null(target.chr)) axis(side = side, 
                                              at=seq(xrange[1], xrange[2], by=diff(xrange)/axis.marks),
-                                             labels = round((seq(min(start(gr.chr)), max(end(gr.chr)), 
-                                                                 by=diff(c(min(start(gr.chr)), 
-                                                                           max(end(gr.chr))))/axis.marks)/1000000), 0))
+                                             labels = round((seq(1, chr.end, 
+                                                                 by=diff(c(1, chr.end))/axis.marks)/1000000), 0))
     
     # Calculate the adjusted start/end index
     adj.x <- chr.ends[each.chr.idx, 'cumStarts']
+    print(adj.x)
     switch(data.type,
            cn=addCnSegs(gr.chr=gr.chr, adj.x=adj.x, ...),
-           expr=addExpr(),
+           expr=addExprScores(gr.chr=gr.chr, yrange=yrange, adj.x=adj.x, ...),
            mutation=addMut())
   }
 }
@@ -224,13 +233,51 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
   max.eidx <- max(e.idx)
   
   switch(label.side,
-         top=lbl.idx <- (top.idx + (mean(c(bot.idx, top.idx))/5)),
-         bottom=lbl.idx <- (bot.idx - (mean(c(bot.idx, top.idx))/5)))
+         top=mtext(gsub("^chr", "", chr.id), side=1),
+         bottom=mtext(gsub("^chr", "", chr.id), side=3))
   
-  text(x = mean(c(max.eidx, min.sidx)), y = lbl.idx, 
-       labels = gsub("^chr", "", chr.id), adj=1, ...)
   rect(xleft = min.sidx, ybottom = bot.idx, xright = max.eidx, ytop = top.idx, 
        col = "white", ...)
   rect(xleft = s.idx, ybottom = bot.idx, xright = e.idx, ytop = top.idx, 
        col = getGieCol(cytoband.chr$gieStain, ...), border = NA)
+}
+
+#----------------------------------------------------------------------------------------
+#' GR Viz: Plotting function to add Expression ZScores
+#' @description Still in the developmental build: Adds zscores of matrix for a given single sample where elementMetadata contains both symbol for Gene HUGO symbol and zscore columns
+#'
+#' @param gr.chr [GRanges]: Input GRanges.  Contains elementMEtadata() columns of "zscore" and "symbol"
+#' @param yrange [Int. Vector]: The y-axis range to plot on; i.e. c(0, 5)
+#' @param adj.x [Integer]: Pulled from plot.settings to adjust the x-coordinates for the right chromosome
+#' @param anno.track [Numeric]: The fraction of the plot to allocate for an extra annotation track
+#' @param add.y.axis [Boolean]: Whether to add an y-axis with z-score values
+#' @param add.annotations [Boolean]: Whether to add annotations for each zscore range
+#'
+#' @return
+#' @export
+#'
+#' @examples
+addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
+                          add.y.axis=FALSE, add.annotations=TRUE){
+  if(add.annotations) {
+    anno.yrange  <- c(min(yrange), max(yrange) + (diff(yrange) * anno.track))
+  } else {
+    anno.yrange <- yrange
+  }
+  # Gets the sgement start/end indices
+  s.idx <- start(gr.chr) + adj.x
+  e.idx <- end(gr.chr) + adj.x
+  
+  mid.idx <- apply(matrix(c(s.idx, e.idx), ncol=2), 1, mean)
+  print(gr.chr$zscore)
+  points(x = mid.idx, y=gr.chr$zscore, 
+         pch=19, col="black")
+  
+  abline(h = 0, col="grey", lty=1)
+  if(add.annotations){
+    abline(h = max(yrange), lty=3, col="grey")
+    text(x = mid.idx, y=(max(yrange) + anno.track / 10), 
+         labels = gr.chr$symbol, adj=0, srt=90, cex=0.7)
+  }
+  if(add.y.axis) axis(side =2, las=2)
 }

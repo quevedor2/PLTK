@@ -6,7 +6,7 @@
 \usage{
 plotGrMetadata(gr, plot.settings, data.type = "cn", target.chr = NULL,
   add.axis = TRUE, side = 1, axis.marks = 5, yrange = c(0, 1),
-  y.spacer = 0.1, ...)
+  y.spacer = 0.1, anno.track = 0, add.annotations = FALSE, ...)
 }
 \arguments{
 \item{gr}{[GRanges]: Input GRanges object}
