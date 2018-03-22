@@ -4,8 +4,8 @@
 \alias{summarizeSignatures}
 \title{cnSignature: Summarizes the CN signature list}
 \usage{
-summarizeSignatures(sig, ids = NULL, sig.metric.values = c("mean", "sd",
-  "skew", "kurtosis", "modality"))
+summarizeSignatures(sig, ids = NULL, decompose = TRUE,
+  sig.metric.values = c("mean", "sd", "skew", "kurtosis", "modality"))
 }
 \arguments{
 \item{sig}{[List]: The returned value from runCnSignatures() with numeric.return=TRUE}

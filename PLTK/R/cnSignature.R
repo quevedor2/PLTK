@@ -313,15 +313,22 @@ sigCnChangepoint <- function(gr, collapse.segs=FALSE, numeric.return=FALSE){
 #' @return
 #' @export
 #' @importFrom mclust Mclust
+#' @importFrom psych describe
 #'
 #' @examples
-summarizeSignatures <- function(sig, ids=NULL,
+summarizeSignatures <- function(sig, ids=NULL, decompose=TRUE,
                                 sig.metric.values = c('mean', 'sd', 'skew', 'kurtosis', 'modality')){
   require(mclust)
+  require(psych)
   sig.metrics <- lapply(sig, function(y) sapply(y, function(x){
     cbind(describe(x), "modality"=Mclust(x)$G)
   })[sig.metric.values,])
-  sig.matrix <- round(sapply(sig.metrics, as.numeric), 3)
-  if(!is.null(ids)) colnames(sig.matrix) <- ids
+  if(decompose){
+    sig.matrix <- round(sapply(sig.metrics, as.numeric), 3)
+    if(!is.null(ids)) colnames(sig.matrix) <- ids
+  } else {
+    sig.matrix <- sig.metrics
+  }
+  
   sig.matrix
 }

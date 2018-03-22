@@ -14,7 +14,7 @@ devtools::build(test.package)
 
 
 install.packages("~/git/PLTK/PLTK_0.0.0.9000.tar.gz",
-                 repos = NULL, type="source")
+                repos = NULL, type = "source")
 library(PLTK)
 
 
@@ -46,12 +46,12 @@ seg <- read.table(example, header = TRUE,
 gr2 <- convertToGr(seg, type='segfile')
 #gr <- aggregateGr(list(gr1, gr2))
 gr.cn <- gr2
-sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr, cn.stat=x, copy.neutral=0))
-sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr, cn.stat=x, copy.neutral=0))
+sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr.cn, cn.stat=x, copy.neutral=0))
+sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr.cn, cn.stat=x, copy.neutral=0))
 all.sigs <- runCnSignatures(gr=gr.cn, binsize=50000, bins=PLTK::bins, 
                             assign.amp.del = FALSE, cn.thresh=0.5, cn.scale=2,
                             numeric.return=TRUE)
-summarizeSignatures(all.sigs, ids=colnames(elementMetadata(gr)))
+summarizeSignatures(all.sigs, ids=colnames(elementMetadata(gr.cn)), decompose=FALSE)
 
 
 

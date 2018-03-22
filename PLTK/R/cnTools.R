@@ -207,11 +207,11 @@ convertToGr <- function(cnsegs, type='Unknown'){
 #' @export
 #'
 #' @examples
-cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, ...){
+cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
   switch(analysis,
-         gf=cnGenomeFraction(...),
-         wgii=cnGenomeFraction(...),
+         gf=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral),
+         wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral),
          stop("analysis not recognized")
   )
 }
@@ -221,11 +221,15 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, ...){
 #' @description Calculates Genomic Fraction or wGII scores. Refer to cnMetrics for more detail.
 #'
 #' @param ... analysis, gr pass in from cnMetrics
+#' @param analysis 
+#' @param gr 
+#' @param cn.stat 
+#' @param copy.neutral 
 #'
 #' @return
 #'
 #' @examples
-cnGenomeFraction <- function(...){
+cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
   getGFdata <- function(each.cn, copy.neutral=0, ...){
     na.idx <- (is.na(each.cn))
@@ -249,8 +253,8 @@ cnGenomeFraction <- function(...){
 
   # Cycles through each chromosome to get all the CN data for all samples
   chr.gf.data <- lapply(as.character(seqnames(gr)@values), function(chr.id){
-    gr.chr <- gr[which(seqnames(gr) == chr.id),]
-    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata, ...)
+    gr.chr <- gr[seqnames(gr) == chr.id]
+    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
     rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
     gf.chr
   })
