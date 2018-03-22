@@ -10,16 +10,19 @@
 #'
 #' @examples
 runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
-                            gap=PLTK::hg19.centromeres, gap.type='centromeres'){
+                            gap=PLTK::hg19.centromeres, gap.type='centromeres', 
+                            assign.amp.del=FALSE, ...){
   sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx){
     sample.sig.list <- list()
+    if(assign.amp.del) gr <- assignAmpDel(seg.gr = gr, ...)
     sample.gr <- collapseSample(gr, sample.idx)
     sample.id <- colnames(elementMetadata(gr))[sample.idx]
-    sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize)
-    sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins)
-    sample.sig.list[['gap.dist']] <- sigGapDist(sample.gr, gap = gap, gap.type = gap.type)
-    sample.sig.list[['seg.size']] <- sigSegSize(sample.gr)
-    sample.sig.list[['cn.bp']] <- sigCnChangepoint(sample.gr, collapse.segs = TRUE)
+    sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize, ...)
+    sample.sig.list[['binned.bp']] <- sigBinBreakpoints(sample.gr, bins, ...)
+    sample.sig.list[['gap.dist']] <- sigGapDist(sample.gr, gap = gap, gap.type = gap.type, ...)
+    sample.sig.list[['seg.size']] <- sigSegSize(sample.gr, ...)
+    sample.sig.list[['cn.bp']] <- sigCnChangepoint(sample.gr, collapse.segs = TRUE, ...)
+    #sample.sig.list[['cn.proportion']] <- sigCopyNumber(sample.gr, weight = TRUE, normalize=FALSE, ...)
     sample.sig.list
   })
   sig.list
@@ -37,7 +40,7 @@ runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
 #' @return \code{segs.list}: A list of genomicRanges objects for genomic regions with continuous segments smaller than binsize
 #' @examples
 #' sigClusterBreakpoints(PLTK::genDemoData(), 50)
-sigClusterBreakpoints <- function(gr, binsize){
+sigClusterBreakpoints <- function(gr, binsize, numeric.return=FALSE){
   require(GenomicRanges)
   # Subsets the granges object given the specifications of st/end ranges
   mkSubGranges <- function(){
@@ -87,10 +90,11 @@ sigClusterBreakpoints <- function(gr, binsize){
       tbin <- binsize*10000
     }
     
-    print(segs.per.bin)
   }
   
-  return(segs.list)
+  ret.score <- segs.list
+  if(numeric.return) ret.score <- sapply(segs.list, length) + 1
+  return(ret.score)
 }
 
 
@@ -109,15 +113,18 @@ sigClusterBreakpoints <- function(gr, binsize){
 #' 
 #' @examples
 #'  sigBinBreakpoints(PLTK::genDemoData(), PLTK::bins)
-sigBinBreakpoints <- function(gr, bins){
+sigBinBreakpoints <- function(gr, bins, numeric.return=FALSE){
   require(GenomicRanges)
   olaps <- GenomicRanges::findOverlaps(query = gr, subject = bins)
   idx <- factor(subjectHits(olaps), levels=seq_len(subjectLength(olaps)))
   
   split.bins <- splitAsList(gr[queryHits(olaps)], idx)
   elementMetadata(bins)$binnedBP <- sapply(split.bins, length)
-  return(list("segs"=split.bins,
-              "bins"=bins))
+  
+  ret.score <- list("segs"=split.bins,
+                    "bins"=bins)
+  if(numeric.return) ret.score <- bins$binnedBP
+  return(ret.score)
 }
 
 
@@ -135,7 +142,8 @@ sigBinBreakpoints <- function(gr, bins){
 #' @export
 #'
 #' @examples sigGapDist(demo, gap.type = "telomeres", gap = PLTK::hg19.telomeres, normalize=TRUE)
-sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', normalize=FALSE, verbose=FALSE){
+sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', 
+                       normalize=FALSE, verbose=FALSE, numeric.return=FALSE){
   gap.dist <- lapply(as.character(seqnames(gr)@values), function(each.chr){
     gr.chr <- gr[seqnames(gr) == each.chr]
     gap.chr <- gap[seqnames(gap) == each.chr]
@@ -163,7 +171,10 @@ sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', n
     return(all.dist)
   })
  names(gap.dist) <- seqnames(gr)@values
- gap.dist
+ 
+ ret.score <- gap.dist
+ if(numeric.return) ret.score <- unlist(sample.sig.list[['gap.dist']])
+ ret.score
 }
 
 
@@ -178,7 +189,7 @@ sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres', n
 #' @export
 #'
 #' @examples sigSegSize(demo, normalize=TRUE)
-sigSegSize <- function(gr, normalize=FALSE){
+sigSegSize <- function(gr, normalize=FALSE, numeric.return=FALSE){
   segl <- lapply(as.character(seqnames(gr)@values), function(each.chr){
     cytoband.chr <- PLTK::hg19.cytobands[seqnames(PLTK::hg19.cytobands) == each.chr]
     
@@ -189,7 +200,10 @@ sigSegSize <- function(gr, normalize=FALSE){
     segl.chr
   })
   names(segl) <- seqnames(gr)@values
-  return(segl)
+  
+  ret.score <- segl
+  if(numeric.return) ret.score <- unlist(sample.sig.list[['seg.size']])
+  return(ret.score)
 }
 
 #----------------------------------------------------------------------------------------
@@ -205,7 +219,7 @@ sigSegSize <- function(gr, normalize=FALSE){
 #' @import plyr
 #'
 #' @examples sigCopyNumber(gr, weight=TRUE, normalize=TRUE)
-sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE){
+sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE, numeric.return=FALSE){
   suppressPackageStartupMessages(require(plyr))
   if(length(elementMetadata(gr)) == 0) stop("Copy-number data per sample is required to be stored in elementMetadata() of the GRanges object")
   if(!all(elementMetadata(gr)[,1] %% 1 == 0, na.rm = TRUE)) stop("This signature requires all copy-number data to be absolute copy-states/integers.  Please ensure no log2ratios are used.")
@@ -250,7 +264,7 @@ sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE){
 #' @export
 #'
 #' @examples sigCnChangepoint(gr, collapse.segs=FALSE)
-sigCnChangepoint <- function(gr, collapse.segs=FALSE){
+sigCnChangepoint <- function(gr, collapse.segs=FALSE, numeric.return=FALSE){
   if(length(elementMetadata(gr)) == 0) stop("Copy-number data per sample is required to be stored in elementMetadata() of the GRanges object")
   if(!all(elementMetadata(gr)[,1] %% 1 == 0, na.rm = TRUE)) stop("This signature requires all copy-number data to be absolute copy-states/integers.  Please ensure no log2ratios are used.")
   if(any(elementMetadata(gr)[,1] < 0, na.rm=TRUE)) warning("There are negative values in copy-number.  Values will be scaled appropriately.")
@@ -268,5 +282,7 @@ sigCnChangepoint <- function(gr, collapse.segs=FALSE){
   })
   names(cn.changepoints) <- as.character(seqnames(gr)@values)
 
-  return(cn.changepoints)
+  ret.score <- cn.changepoints
+  if(numeric.return) ret.score <- unlist(cn.changepoints)
+  return(ret.score)
 }
