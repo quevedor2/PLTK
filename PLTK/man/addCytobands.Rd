@@ -22,9 +22,6 @@ addCytobands(s.idx, e.idx, bot.idx = 0.1, top.idx = 0.9, chr.id = "NA",
 
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Adds the rectangles for each chromosomal cytobadn and centromeres
 }

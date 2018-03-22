@@ -209,6 +209,7 @@ getGieCol <- function(gie, gie.col='black', cen.col='red',
 #' @param ... 
 #'
 #' @return
+#' @export
 #'
 #' @examples
 addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9, 
@@ -225,5 +226,5 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
   rect(xleft = min.sidx, ybottom = bot.idx, xright = max.eidx, ytop = top.idx, 
        col = "white", ...)
   rect(xleft = s.idx, ybottom = bot.idx, xright = e.idx, ytop = top.idx, 
-       col = getGieCol(cytoband.chr$gieStain, ...), border = NA)
+       col = PLTK:::getGieCol(cytoband.chr$gieStain, ...), border = NA)
 }
