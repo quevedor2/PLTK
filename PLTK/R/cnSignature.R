@@ -174,7 +174,7 @@ sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres',
  names(gap.dist) <- seqnames(gr)@values
  
  ret.score <- gap.dist
- if(numeric.return) ret.score <- unlist(sample.sig.list[['gap.dist']])
+ if(numeric.return) ret.score <- unlist(gap.dist)
  ret.score
 }
 
@@ -203,7 +203,7 @@ sigSegSize <- function(gr, normalize=FALSE, numeric.return=FALSE){
   names(segl) <- seqnames(gr)@values
   
   ret.score <- segl
-  if(numeric.return) ret.score <- unlist(sample.sig.list[['seg.size']])
+  if(numeric.return) ret.score <- unlist(segl)
   return(ret.score)
 }
 
