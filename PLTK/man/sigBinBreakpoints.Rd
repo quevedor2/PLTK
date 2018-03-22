@@ -4,7 +4,7 @@
 \alias{sigBinBreakpoints}
 \title{cnSignature: sigBinBreakpoints}
 \usage{
-sigBinBreakpoints(gr, bins)
+sigBinBreakpoints(gr, bins, numeric.return = FALSE)
 }
 \arguments{
 \item{gr}{GRanges object of your segments}

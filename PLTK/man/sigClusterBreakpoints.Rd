@@ -4,7 +4,7 @@
 \alias{sigClusterBreakpoints}
 \title{cnSignature: sigClusterBreakpoints}
 \usage{
-sigClusterBreakpoints(gr, binsize)
+sigClusterBreakpoints(gr, binsize, numeric.return = FALSE)
 }
 \arguments{
 \item{gr}{A granges object}

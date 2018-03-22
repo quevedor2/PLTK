@@ -4,7 +4,7 @@
 \alias{sigCnChangepoint}
 \title{cnSignature: Copy-number changepoints}
 \usage{
-sigCnChangepoint(gr, collapse.segs = FALSE)
+sigCnChangepoint(gr, collapse.segs = FALSE, numeric.return = FALSE)
 }
 \arguments{
 \item{gr}{[GRanges]: GRanges object}

@@ -4,7 +4,8 @@
 \alias{cnMetrics}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-cnMetrics(analysis = NA, gr, cn.stat = "all", copy.neutral = 0)
+cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
+  ...)
 }
 \arguments{
 \item{[GRanges]:}{gr GRanges object}

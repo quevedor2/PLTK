@@ -4,14 +4,14 @@
 \alias{cnGenomeFraction}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-cnGenomeFraction(analysis, gr, cn.stat = "all", ...)
+cnGenomeFraction(...)
 }
 \arguments{
+\item{...}{}
+
 \item{analysis}{[Character]: passed in from cnMetrics}
 
 \item{gr}{[GRanges]: passed in from cnMetrics}
-
-\item{...}{}
 
 \item{[Character]:}{cn.stat passed in from cnMetrics}
 }

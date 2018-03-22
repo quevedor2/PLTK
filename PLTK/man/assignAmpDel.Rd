@@ -4,7 +4,7 @@
 \alias{assignAmpDel}
 \title{cnTools: Convert Log2Ratio to Amp/Del}
 \usage{
-assignAmpDel(seg.gr, cn.thresh = 0.5)
+assignAmpDel(seg.gr, cn.thresh = 0.5, cn.scale = 0)
 }
 \arguments{
 \item{[GRanges]:}{seg.gr A GRanges object with copy-number log2ratios in elementMetadata() columns}

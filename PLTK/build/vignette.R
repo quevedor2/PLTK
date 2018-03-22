@@ -42,7 +42,11 @@ gr <- aggregateGr(list(gr1, gr2))
 gr <- gr2
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr, cn.stat=x, copy.neutral=0))
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr, cn.stat=x, copy.neutral=0))
-all.sigs <- runCnSignatures(gr=gr, binsize=50000, bins=PLTK::bins)
+all.sigs <- runCnSignatures(gr=gr, binsize=50000, bins=PLTK::bins, 
+                            assign.amp.del = FALSE, cn.thresh=0.5, cn.scale=2,
+                            numeric.return=TRUE)
+summarizeSignatures(all.sigs, ids=colnames(elementMetadata(gr)))
+
 
 
 PDIR='/mnt/work1/users/bhklab/Projects/cell_line_clonality/total_cel_list/datasets'
@@ -52,23 +56,23 @@ tad.gr <- makeGRangesFromDataFrame(tad)
 seqlevelsStyle(tad.gr) <- 'UCSC'
 mapped.ref.gr <- mapGrToReference(gr, tad.gr, overlap='mode')
 
-split.screen(c(3, 1))
-screen(3)
+split.screen(c(2, 1))
+screen(2)
 par(mar=c(5.1, 4.1, 0.5, 2.1))
 plot.settings <- initializeGrPlot(PLTK::hg19.cytobands, plot.chrom=TRUE,
-                                  plot.cband=FALSE, alpha.factor=3, label.side='bottom',
+                                  plot.cband=TRUE, alpha.factor=3, label.side='bottom',
                                  target.chr='chr20')
-screen(2)
+screen(1)
 par(mar=c(0.5, 4.1, 4.1, 2.1))
 suppressWarnings(plotGrMetadata(gr, plot.settings, col.ids=c(1,2), data.type='cn', 
                                 add.axis=FALSE, axis.mark=4, chr.lines=TRUE,
                                 target.chr='chr20'))
-screen(1)
-par(mar=c(0.5, 4.1, 4.1, 2.1))
-suppressWarnings(plotGrMetadata(gr, plot.settings, col.ids=c(1,2), data.type='cn', 
-                                add.axis=TRUE, side=3, axis.mark=4, chr.lines=TRUE,
-               target.chr='chr20'))
 close.screen(all.screens=TRUE)
 
 
 
+plot.settings <- initializeGrPlot(PLTK::hg19.cytobands, plot.chrom=TRUE,
+                                  plot.cband=FALSE, alpha.factor=3, label.side='bottom')
+plot.settings <- initializeGrPlot(PLTK::hg19.cytobands, plot.chrom=TRUE,
+                                  plot.cband=TRUE, alpha.factor=3, label.side='bottom',
+                                  target.chr="chr2")

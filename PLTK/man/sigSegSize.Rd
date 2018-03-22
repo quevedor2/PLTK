@@ -4,7 +4,7 @@
 \alias{sigSegSize}
 \title{cnSignature: Segment sizes}
 \usage{
-sigSegSize(gr, normalize = FALSE)
+sigSegSize(gr, normalize = FALSE, numeric.return = FALSE)
 }
 \arguments{
 \item{gr}{[GRanges]: GRanges object}

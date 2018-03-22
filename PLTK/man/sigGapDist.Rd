@@ -5,7 +5,7 @@
 \title{cnSignature: Distance from Centromeres or Telomeres}
 \usage{
 sigGapDist(gr, gap = PLTK::hg19.centromeres, gap.type = "centromeres",
-  normalize = FALSE, verbose = FALSE)
+  normalize = FALSE, verbose = FALSE, numeric.return = FALSE)
 }
 \arguments{
 \item{gr}{[GRanges]: GRanges object}
