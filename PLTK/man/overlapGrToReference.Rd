@@ -2,22 +2,25 @@
 % Please edit documentation in R/cnTools.R
 \name{overlapGrToReference}
 \alias{overlapGrToReference}
-\title{Title}
+\title{cnTools: Maps one GRanges objec to another (Overlap)}
 \usage{
 overlapGrToReference(gr, ref.gr, int_ids = c("start", "end"),
   chr_id = "chr", overlap)
 }
 \arguments{
-\item{gr}{}
+\item{gr}{[GRanges]: Input GRanges object containing copy-number elementMetadata()}
 
-\item{ref.gr}{}
+\item{ref.gr}{[GRanges]: Target GRanges object}
 
-\item{int_ids}{}
+\item{int_ids}{[Characters]: The start and end column, shouldn't have to change this as its grabbed from getGrCoords() [default: c("start", "end")]}
 
-\item{chr_id}{}
+\item{chr_id}{[Characters]: The chromosome id, shouldn't have to change this as its grabbed from getGrCoords() [default: "chr"]}
 
-\item{overlap}{}
+\item{overlap}{[Character]: The type of overlap summary metric: "mean", "median", "mode" (organized from quickest to slowest)}
+}
+\value{
+A GRanges object of the Target GRanges object with the summarized elementMetadata() from input GRanges
 }
 \description{
-Title
+A less senstive method compared to mapGrToReference() that maps one GRanges object (input) to a reference GRanges object (Target).  This works through the intervals package rather than the GRanges and IRanges to greatly increase the throughput.  It also operates using interval_overlaps rather than intersect to take a general "any overlap" method as compared to the aforementioned method
 }

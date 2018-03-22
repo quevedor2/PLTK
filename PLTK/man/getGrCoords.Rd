@@ -2,13 +2,21 @@
 % Please edit documentation in R/cnTools.R
 \name{getGrCoords}
 \alias{getGrCoords}
-\title{Title}
+\title{cnTools: Get GRanges Coordinates}
 \usage{
-getGrCoords(gr)
+getGrCoords(gr, keep.extra.columns = FALSE)
 }
 \arguments{
-\item{gr}{}
+\item{gr}{[GRanges]: Granges object}
+
+\item{keep.extra.columns}{[Boolean]: Whether to append the elementMetadata() or not}
+}
+\value{
+4-column dataframe of "chr", "start", "end", "strand"
 }
 \description{
-Title
+Takes a GRanges object and converts the seqnames, range, and strand into a dataframe
+}
+\examples{
+getGrCoords(genDemoData())
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/cnTools.R
 \name{mapGrToReference}
 \alias{mapGrToReference}
-\title{cnTools: Maps one GRanges objec to another}
+\title{cnTools: Maps one GRanges objec to another (Intersect)}
 \usage{
 mapGrToReference(gr, ref.gr, overlap = "mode", mode.type = "normal")
 }
@@ -17,5 +17,5 @@ mapGrToReference(gr, ref.gr, overlap = "mode", mode.type = "normal")
 The same Target GRanges object with elementMetadata() filled in
 }
 \description{
-cnTools: Maps one GRanges objec to another
+cnTools: Maps one GRanges objec to another (Intersect)
 }
