@@ -233,9 +233,11 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
   max.eidx <- max(e.idx)
   
   switch(label.side,
-         top=mtext(gsub("^chr", "", chr.id), side=1),
-         bottom=mtext(gsub("^chr", "", chr.id), side=3))
+         top=lbl.idx <- (top.idx + (mean(c(bot.idx, top.idx))/5)),
+         bottom=lbl.idx <- (bot.idx - (mean(c(bot.idx, top.idx))/5)))
   
+  text(x = mean(c(max.eidx, min.sidx)), y = lbl.idx, 
+       labels = gsub("^chr", "", chr.id), adj=1, ...)
   rect(xleft = min.sidx, ybottom = bot.idx, xright = max.eidx, ytop = top.idx, 
        col = "white", ...)
   rect(xleft = s.idx, ybottom = bot.idx, xright = e.idx, ytop = top.idx, 
@@ -258,7 +260,7 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
 #'
 #' @examples
 addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
-                          add.y.axis=FALSE, add.annotations=TRUE){
+                          add.y.axis=FALSE, add.annotations=TRUE, ...){
   if(add.annotations) {
     anno.yrange  <- c(min(yrange), max(yrange) + (diff(yrange) * anno.track))
   } else {
@@ -277,7 +279,7 @@ addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
   if(add.annotations){
     abline(h = max(yrange), lty=3, col="grey")
     text(x = mid.idx, y=(max(yrange) + anno.track / 10), 
-         labels = gr.chr$symbol, adj=0, srt=90, cex=0.7)
+         labels = gr.chr$symbol, adj=0, srt=90, ...)
   }
   if(add.y.axis) axis(side =2, las=2)
 }
