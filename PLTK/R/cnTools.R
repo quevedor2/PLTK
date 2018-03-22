@@ -160,7 +160,7 @@ convertToGr <- function(cnsegs, type='Unknown'){
   if(class(cnsegs) == 'QDNAseqCopyNumbers' || type == 'QDNAseq'){
     suppressPackageStartupMessages(require(QDNAseq))
     gr <- makeGRangesFromDataFrame(cnsegs@featureData@data, keep.extra.columns=FALSE)
-    elementMetadata(gr) <- QDNAseq:::calls(cnsegs)[,1:4]
+    elementMetadata(gr) <- QDNAseq:::calls(cnsegs)
   } else if(is.data.frame(cnsegs) && type == 'segfile'){
     suppressPackageStartupMessages(require(GenomicRanges))
     warning("SEGFILE: Assuming segfile standard outlined at https://software.broadinstitute.org/software/igv/sites/cancerinformatics.org.igv/files/linked_files/example.seg")
