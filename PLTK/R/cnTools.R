@@ -294,28 +294,33 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
   if(sample.idx > ncol(elementMetadata(gr))) stop("Please specify the index of a sample in elementMetadata()")
   if(is.null(sample.idx)) stop("Cannot collapse GRanges without the index of your sample in elementMetadta()")
   
-  # Parse out CN information for the sample
-  each.sample <- elementMetadata(gr)[,sample.idx]
   sample.id <- colnames(elementMetadata(gr))[sample.idx]
+  print(sample.id)
   
-  # Reduce continuous segments into a single segment based on rle
-  rle.sample <- getRleIdx(each.sample)
-  reduce.gr <- sapply(seq_along(rle.sample$start.idx), function(each_rle){
-    if(!(na.rm && !(rle.sample$na.stat[each_rle]))){
-      IRanges::reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
-    } else if(!na.rm){
-      IRanges::reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
-    }
+  # Parse out CN information for the sample
+  reduce.list <- lapply(as.character(seqnames(gr)@values), function(each.chr){
+    gr.chr <- gr[seqnames(gr)==each.chr]
+    each.sample <- elementMetadata(gr.chr)[,sample.idx]
+    
+    # Reduce continuous segments into a single segment based on rle
+    rle.sample <- PLTK::getRleIdx(each.sample)
+    gr.intervals <- matrix(c(start(gr.chr), end(gr.chr)),ncol=2)
+    reduce.gr <- GRanges(seqnames=seqnames(gr.chr)[rle.sample$start.idx], 
+                         ranges = IRanges(start=gr.intervals[rle.sample$start.idx, 1],
+                                          end=gr.intervals[rle.sample$end.idx, 2]), 
+                         strand=strand(gr.chr)[rle.sample$start.idx])
+    if(any(!rle.sample$na.stat)) reduce.gr <- reduce.gr[-which(!rle.sample$na.stat),]
+
+    # Reassign copy-number values to the reduced GRanges object
+    #reduce.gr <-  Reduce(c, reduce.gr[!sapply(reduce.gr, is.null)])
+    cn.values <- rle.sample$values
+    if(na.rm) cn.values <- as.integer(na.omit(cn.values))
+    elementMetadata(reduce.gr)$x <- cn.values
+    colnames(elementMetadata(reduce.gr)) <- sample.id
+    
+    reduce.gr
   })
-  
-  # Reassign copy-number values to the reduced GRanges object
-  reduce.gr <-  Reduce(c, reduce.gr[!sapply(reduce.gr, is.null)])
-  cn.values <- rle.sample$values
-  if(na.rm) cn.values <- as.integer(na.omit(cn.values))
-  elementMetadata(reduce.gr)$x <- cn.values
-  colnames(elementMetadata(reduce.gr)) <- sample.id
-  
-  reduce.gr
+  Reduce(c, reduce.list)
 }
 
 #----------------------------------------------------------------------------------------

@@ -31,6 +31,12 @@ sigCnChangepoint(demo, collapse.segs = TRUE)
 sigCnChangepoint(demo, collapse.segs = FALSE)
 
 
+example.expr <- "~/Desktop/zscore_BRCA.txt"
+expr.df <- read.table(example.expr, header=TRUE,
+                      check.names = FALSE, stringsAsFactors = FALSE)
+gr.expr <- sort(makeGRangesFromDataFrame(expr.df, keep.extra.columns = TRUE))
+
+
 example <- "/mnt/work1/users/home2/quever/example.seg"
 example <- "~/Desktop/example.seg"
 seg <- read.table(example, header = TRUE,
