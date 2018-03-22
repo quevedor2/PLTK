@@ -11,10 +11,11 @@
 #' @examples
 runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
                             gap=PLTK::hg19.centromeres, gap.type='centromeres', 
-                            assign.amp.del=FALSE, ...){
-  sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx){
+                            assign.amp.del=FALSE, cn.thresh=0.5, cn.scale=0, 
+                            ...){
+  sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx, ...){
     sample.sig.list <- list()
-    if(assign.amp.del) gr <- assignAmpDel(seg.gr = gr, ...)
+    if(assign.amp.del) gr <- assignAmpDel(seg.gr = gr, cn.thresh, cn.scale)
     sample.gr <- collapseSample(gr, sample.idx)
     sample.id <- colnames(elementMetadata(gr))[sample.idx]
     sample.sig.list[['cluster.bp']] <- sigClusterBreakpoints(sample.gr, binsize, ...)
@@ -24,7 +25,7 @@ runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
     sample.sig.list[['cn.bp']] <- sigCnChangepoint(sample.gr, collapse.segs = TRUE, ...)
     #sample.sig.list[['cn.proportion']] <- sigCopyNumber(sample.gr, weight = TRUE, normalize=FALSE, ...)
     sample.sig.list
-  })
+  }, ...)
   sig.list
 }
 
@@ -285,4 +286,28 @@ sigCnChangepoint <- function(gr, collapse.segs=FALSE, numeric.return=FALSE){
   ret.score <- cn.changepoints
   if(numeric.return) ret.score <- unlist(cn.changepoints)
   return(ret.score)
+}
+
+#----------------------------------------------------------------------------------------
+#' cnSignature: Summarizes the CN signature list
+#' @description Works with the return list from runCnSignatures() when numeric.return=TRUE.  Will summarize this into a matrix
+#'
+#' @param sig [List]: The returned value from runCnSignatures() with numeric.return=TRUE
+#' @param ids [Char. Vector]: Vector of all sample names
+#' @param sig.metric.values [Char. Vector]: All values to be returned from describe and mclust
+#'
+#' @return
+#' @export
+#' @importFrom mclust Mclust
+#'
+#' @examples
+summarizeSignatures <- function(sig, ids=NULL,
+                                sig.metric.values = c('mean', 'sd', 'skew', 'kurtosis', 'modality')){
+  require(mclust)
+  sig.metrics <- lapply(sig, function(y) sapply(y, function(x){
+    cbind(describe(x), "modality"=Mclust(x)$G)
+  })[sig.metric.values,])
+  sig.matrix <- round(sapply(sig.metrics, as.numeric), 3)
+  if(!is.null(ids)) colnames(sig.matrix) <- ids
+  sig.matrix
 }
