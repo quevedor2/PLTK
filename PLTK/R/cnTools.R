@@ -320,7 +320,7 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
 }
 
 #----------------------------------------------------------------------------------------
-#' cnTools: Maps one GRanges objec to another
+#' cnTools: Maps one GRanges objec to another (Intersect)
 #'
 #' @param gr [GRanges]: Input GRanges object with CNdata stored in elementMetadata()
 #' @param ref.gr [GRanges]: Target GRanges object to map to
@@ -432,19 +432,20 @@ mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
 }
 
 #----------------------------------------------------------------------------------------
-#' Title
+#' cnTools: Maps one GRanges objec to another (Overlap)
+#' @description A less senstive method compared to mapGrToReference() that maps one GRanges object (input) to a reference GRanges object (Target).  This works through the intervals package rather than the GRanges and IRanges to greatly increase the throughput.  It also operates using interval_overlaps rather than intersect to take a general "any overlap" method as compared to the aforementioned method
 #'
-#' @param gr 
-#' @param ref.gr 
-#' @param int_ids 
-#' @param chr_id 
-#' @param overlap 
+#' @param gr [GRanges]: Input GRanges object containing copy-number elementMetadata()
+#' @param ref.gr [GRanges]: Target GRanges object
+#' @param int_ids [Characters]: The start and end column, shouldn't have to change this as its grabbed from getGrCoords() [default: c("start", "end")]
+#' @param chr_id [Characters]: The chromosome id, shouldn't have to change this as its grabbed from getGrCoords() [default: "chr"]
+#' @param overlap [Character]: The type of overlap summary metric: "mean", "median", "mode" (organized from quickest to slowest)
 #'
-#' @return
+#' @return A GRanges object of the Target GRanges object with the summarized elementMetadata() from input GRanges
 #' @export
+#' @import intervals
 #'
 #' @examples
-
 overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"), 
                                  chr_id='chr', overlap){
   all.ref.gr.chr <- lapply(as.character(seqnames(sort(ref.gr))@values), function(each_chr){
@@ -453,57 +454,67 @@ overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"),
     h_chr <- getGrCoords(gr[seqnames(gr) == each_chr])
     cn_mat <- as.matrix(elementMetadata(gr[seqnames(gr) == each_chr]))
     
-    getIntervals <- function(xdf, colids){
-      Intervals(as.matrix(xdf[,colids]))
-    }
-    overlap.idx <- interval_overlap(getIntervals(target.chr, int_ids), 
-                                    getIntervals(h_chr, int_ids))
-    
-    # For all overlapping segments, calculates the mean, mode, or median
-    getTargetVal <- function(cn_mat, overlap.idx, summfun){
-      i <- 1
-      mean_cn_target <- sapply(overlap.idx, function(each_target){
-        print(i)
-        print(paste0(i, "-", paste(each_target, collapse=",")))
-        apply(cn_mat[each_target,,drop=FALSE], 2, summfun, na.rm=TRUE)
-        i <<- i + 1
-      })
-      mean_cn_target <- as.data.frame(t(mean_cn_target))
-      ### Developmental, may not work
-      na_idx <- which(apply(mean_cn_target, 1, function(x) all(is.na(x))))
-      if(length(na_idx) > 0) mean_cn_target <- mean_cn_target[-na_idx,]
-      mean_cn_target
-      ###
-    }
-    print(paste0("Summarizing overlap ", each_chr, "..."))
-    switch(overlap,
-           mean=summfun <- mean,
-           mode=summfun <- getMode,
-           median=summfun <- median)
-    mean_cn_target <- getTargetVal(cn_mat, overlap.idx, summfun)
-    print(paste0("Collapsing ", each_chr))
-    
-    
-    #target.chr_idx <- sapply(overlap.idx, length) > 0  # reference dataset intervals that have a match
-    ref.gr.chr <- ref.gr[seqnames(ref.gr) == each_chr] 
-    elementMetadata(ref.gr.chr) <- as.matrix(mean_cn_target)
+    tryCatch({
+      getIntervals <- function(xdf, colids){
+        Intervals(as.matrix(xdf[,colids]))
+      }
+      overlap.idx <- interval_overlap(getIntervals(target.chr, int_ids), 
+                                      getIntervals(h_chr, int_ids))
+      
+      # For all overlapping segments, calculates the mean, mode, or median
+      getTargetVal <- function(cn_mat, overlap.idx, summfun){
+        mean_cn_target <- sapply(overlap.idx, function(each_target){
+          apply(cn_mat[each_target,,drop=FALSE], 2, summfun, na.rm=TRUE)
+        })
+        mean_cn_target <- as.data.frame(t(mean_cn_target))
+        ### Developmental, may not work
+        na_idx <- which(apply(mean_cn_target, 1, function(x) all(is.na(x))))
+        if(length(na_idx) > 0) mean_cn_target <- mean_cn_target[-na_idx,]
+        mean_cn_target
+        ###
+      }
+      print(paste0("Summarizing overlap ", each_chr, "..."))
+      switch(overlap,
+             mean=summfun <- mean,
+             mode=summfun <- getMode,
+             median=summfun <- median)
+      mean_cn_target <- getTargetVal(cn_mat, overlap.idx, summfun)
+      print(paste0("Collapsing ", each_chr))
+      
+      
+      #target.chr_idx <- sapply(overlap.idx, length) > 0  # reference dataset intervals that have a match
+      ref.gr.chr <- ref.gr[seqnames(ref.gr) == each_chr] 
+      elementMetadata(ref.gr.chr) <- as.matrix(mean_cn_target)
+    }, error=function(e){
+      ref.gr.chr <- ref.gr[seqnames(ref.gr) == each_chr] 
+    })
+    ref.gr.chr
   })
   Reduce(c, all.ref.gr.chr)
   
 }
 
-#' Title
+#----------------------------------------------------------------------------------------
+#' cnTools: Get GRanges Coordinates
 #'
-#' @param gr 
+#' @param keep.extra.columns [Boolean]: Whether to append the elementMetadata() or not
+#' @param gr [GRanges]: Granges object
 #'
-#' @return
+#' @description Takes a GRanges object and converts the seqnames, range, and strand into a dataframe
+#'
+#' @return 4-column dataframe of "chr", "start", "end", "strand"
 #' @export
 #'
-#' @examples
-getGrCoords <- function(gr){
-  data.frame("chr"=rep(seqnames(gr)@values, 
-                         seqnames(gr)@lengths),
-             "start"=start(gr),
-             "end"=end(gr),
-             "strand"=strand(gr))
+#' @examples getGrCoords(genDemoData())
+getGrCoords <- function(gr, keep.extra.columns=FALSE){
+  gr.df <- data.frame("chr"=rep(seqnames(gr)@values, 
+                                seqnames(gr)@lengths),
+                      "start"=start(gr),
+                      "end"=end(gr),
+                      "strand"=strand(gr))
+  gr.df <- cbind(gr.df, as.matrix(elementMetadata(gr)))
+  as.data.frame(gr.df)
 }
+
+
+
