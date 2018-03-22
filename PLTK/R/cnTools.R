@@ -127,10 +127,10 @@ segfileToGr <- function(seg, col.id='SampleX'){
 #' @return
 #'
 #' @examples
-assignAmpDel <- function(seg.gr, cn.thresh=0.5){
+assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
   seg.gr.meta <- apply(elementMetadata(seg.gr), 2, function(x){
-    del <- (-1 * cn.thresh)
-    amp <- (1 * cn.thresh)
+    del <- (-1 * cn.thresh) + cn.scale
+    amp <- (1 * cn.thresh) + cn.scale
     amp.idx <-  x > amp
     del.idx <-  x < del
     neutral.idx <- (x >= del) & (x <= amp)
@@ -205,12 +205,11 @@ convertToGr <- function(cnsegs, type='Unknown'){
 #' @export
 #'
 #' @examples
-cnMetrics <- function(analysis=NA, gr, cn.stat='all', copy.neutral=0){
+cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, ...){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
-  
   switch(analysis,
-         gf=cnGenomeFraction(analysis, ...),
-         wgii=cnGenomeFraction(analysis, ...),
+         gf=cnGenomeFraction(...),
+         wgii=cnGenomeFraction(...),
          stop("analysis not recognized")
   )
 }
@@ -227,7 +226,7 @@ cnMetrics <- function(analysis=NA, gr, cn.stat='all', copy.neutral=0){
 #' @return
 #'
 #' @examples
-cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
+cnGenomeFraction <- function(...){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
   getGFdata <- function(each.cn, copy.neutral=0, ...){
     na.idx <- (is.na(each.cn))
@@ -248,15 +247,15 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', ...){
              "neutral"=neutral.genome.size), 
            ncol=1)
   }
-  
+
   # Cycles through each chromosome to get all the CN data for all samples
-  chr.gf.data <- lapply(seqnames(gr)@values, function(chr.id){
+  chr.gf.data <- lapply(as.character(seqnames(gr)@values), function(chr.id){
     gr.chr <- gr[which(seqnames(gr) == chr.id),]
-    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
+    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata, ...)
     rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
     gf.chr
   })
-  names(chr.gf.data) <- seqnames(gr)@values
+  names(chr.gf.data) <- as.character(seqnames(gr)@values)
   
   # Goes through all CN data to give back Genomic Fraction or wGII scores
   cn.row.idx <- grep(cn.stat, rownames(chr.gf.data[[1]]))
@@ -303,9 +302,9 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
   rle.sample <- getRleIdx(each.sample)
   reduce.gr <- sapply(seq_along(rle.sample$start.idx), function(each_rle){
     if(!(na.rm && !(rle.sample$na.stat[each_rle]))){
-      reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
+      IRanges::reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
     } else if(!na.rm){
-      reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
+      IRanges::reduce(gr[rle.sample$start.idx[each_rle]:rle.sample$end.idx[each_rle],])
     }
   })
   
