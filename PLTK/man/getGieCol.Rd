@@ -17,6 +17,8 @@ getGieCol(gie, gie.col = "black", cen.col = "red", plot.cband = TRUE,
 \item{plot.cband}{[Boolean]: Toggle for plotting cytobands or not; will always plot centromeres}
 
 \item{alpha.factor}{[Integer]: How many times to dilute the intensity of the colours, i.e. 2 will dilute the colours 2x [Default: 2]}
+
+\item{allow.alpha}{[Boolean]: scales::alpha doesn't work on Samwise, so this allows the trigger to remove the opacity factor in the hex code}
 }
 \description{
 GR Viz: Generates the colours for cytobands
