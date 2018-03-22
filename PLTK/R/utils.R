@@ -1,3 +1,4 @@
+#----------------------------------------------------------------------------------------
 #' utils: genDemoData
 #' @description Generates a random granges object to be used for demo purposes when trying out the cnSignature functions
 #'
@@ -43,6 +44,7 @@ genDemoData <- function(seed=404){
 }
 
 
+#----------------------------------------------------------------------------------------
 #' utils: dataframeToGranges
 #' @description OUTDATED: Uses a set of complex regex expression to automatically parse the chromosome, start_idx, and end_idx from a dataframe of segments to create a GRanges object. Also accepts standard GRanges arguments that you would normally pass in to define extra information.
 #'
@@ -82,6 +84,7 @@ dataframeToGranges <- function(intdf,
 }
 
 
+#----------------------------------------------------------------------------------------
 #' utils: getRleIdx
 #' @description Similar to the rle() function, but gives start, end and NA indices on top of the existing "length" and "values". Easily viewed using str() on the return object().
 #'
@@ -121,6 +124,8 @@ getRleIdx <- function(x, col.id=NA, na.val=-100){
   return(rle.x)
 }
 
+
+#----------------------------------------------------------------------------------------
 #' utils: Calculates the mode
 #'
 #' @param n [Vector]: A vector of numbers elements to calculate the mode
