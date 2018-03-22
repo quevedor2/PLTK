@@ -18,9 +18,6 @@ getGieCol(gie, gie.col = "black", cen.col = "red", plot.cband = TRUE,
 
 \item{alpha.factor}{[Integer]: How many times to dilute the intensity of the colours, i.e. 2 will dilute the colours 2x [Default: 2]}
 }
-\value{
-
-}
 \description{
 GR Viz: Generates the colours for cytobands
 }

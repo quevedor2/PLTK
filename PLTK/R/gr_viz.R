@@ -173,6 +173,7 @@ initializeGrPlot <- function(cytoband.gr, target.chr=NULL,
 #' @param alpha.factor [Integer]: How many times to dilute the intensity of the colours, i.e. 2 will dilute the colours 2x [Default: 2]
 #'
 #' @return
+#' @export
 #'
 #' @examples
 getGieCol <- function(gie, gie.col='black', cen.col='red', 
@@ -226,5 +227,5 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
   rect(xleft = min.sidx, ybottom = bot.idx, xright = max.eidx, ytop = top.idx, 
        col = "white", ...)
   rect(xleft = s.idx, ybottom = bot.idx, xright = e.idx, ytop = top.idx, 
-       col = PLTK:::getGieCol(cytoband.chr$gieStain, ...), border = NA)
+       col = getGieCol(cytoband.chr$gieStain, ...), border = NA)
 }
