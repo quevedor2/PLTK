@@ -1,18 +1,24 @@
+#----------------------------------------------------------------------------------------
 #' cnSignature: Wrapper to run all CN Signatures
 #' @description A Wrapper function to run all copy-number GRanges objects through the CN signature functions
 #'
 #' @param gr [GRanges]: GRanges object with copy-number in the elementMetadata().  Tested on output from convertToGr()
 #' @param binsize [Integer]: Maximum size of segments to be considered in a small-CN cluster [Default: 1000000]
 #' @param bins [GRanges]: A pre-made GRanges object where the genome is binned into smaller segment [Default: PLTK::bins]
+#' @param gap 
+#' @param gap.type 
+#' @param assign.amp.del 
+#' @param cn.thresh 
+#' @param cn.scale 
+#' @param ... 
 #'
 #' @return [List]: List of all signatures List[[each sample]][[Signature1]]
 #' @export
 #'
 #' @examples
 runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
-                            gap=PLTK::hg19.centromeres, gap.type='centromeres', 
-                            assign.amp.del=FALSE, cn.thresh=0.5, cn.scale=0, 
-                            ...){
+                            gap=PLTK::hg19.centromeres, gap.type='centromeres',
+                            assign.amp.del=FALSE, cn.thresh=0.5, cn.scale=0, ...){
   sig.list <- lapply(seq_along(elementMetadata(gr)), function(sample.idx, ...){
     sample.sig.list <- list()
     if(assign.amp.del) gr <- assignAmpDel(seg.gr = gr, cn.thresh, cn.scale)
@@ -34,7 +40,9 @@ runCnSignatures <- function(gr, binsize=1000000, bins=PLTK::bins,
 #' @description Takes a list of copy-number segments and tries to identify regions where there are consecutive segments less than a pre-designed segment size. Within these regions, it finds the longest string of consecutive segments that are less than the pre-designed segment size, annotates it, and reports them back in a list for downstream analysis.
 #'
 #' @param gr A granges object
+#' @param numeric.return 
 #' @param binsize A set binsize (bp)
+#'
 #' @import GenomicRanges
 #' @export
 #' 
@@ -104,7 +112,9 @@ sigClusterBreakpoints <- function(gr, binsize, numeric.return=FALSE){
 #' @description Takes a GRanges object of segments and counts the number of breakpoints found within pre-designed genomic bins
 
 #' @param gr GRanges object of your segments
+#'
 #' @param bins GRanges object of the genome binned into set segment sizes [i.e. PLTK::bins]
+#' @param numeric.return 
 #'
 #' @return A list containing two elements:
 #'   \code{segs}: A list of granges object for the original \code{gr} placed into each \code{bins}
@@ -138,6 +148,7 @@ sigBinBreakpoints <- function(gr, bins, numeric.return=FALSE){
 #' @param gap [GRanges]: GRanges gap data, either PLTK::centromeres or PLTK::telomeres
 #' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
 #' @param verbose [Boolean]: Prints out extra debug info
+#' @param numeric.return 
 #'
 #' @return List of distances from the telomere or centromere
 #' @export
@@ -185,6 +196,7 @@ sigGapDist <- function(gr, gap=PLTK::hg19.centromeres, gap.type='centromeres',
 #'
 #' @param gr [GRanges]: GRanges object
 #' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
+#' @param numeric.return 
 #'
 #' @return List of segment sizes
 #' @export
@@ -214,6 +226,7 @@ sigSegSize <- function(gr, normalize=FALSE, numeric.return=FALSE){
 #' @param gr [GRanges]: GRanges object
 #' @param weight [Boolean]: Weight the copy-number for a segment based on the size of the segment
 #' @param normalize [Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes
+#' @param numeric.return 
 #'
 #' @return Dataframe of copy-number values for each chromosome
 #' @export
@@ -260,6 +273,7 @@ sigCopyNumber <- function(gr, weight=TRUE, normalize=FALSE, numeric.return=FALSE
 #'
 #' @param collapse.segs [Boolean]: Whether segments with same copy-states separated by a gap with no data should be collapsed
 #' @param gr [GRanges]: GRanges object
+#' @param numeric.return 
 #'
 #' @return List containing and element for each chromosome with the copy-number changepoints at each breakpoint
 #' @export

@@ -10,6 +10,8 @@ sigCnChangepoint(gr, collapse.segs = FALSE, numeric.return = FALSE)
 \item{gr}{[GRanges]: GRanges object}
 
 \item{collapse.segs}{[Boolean]: Whether segments with same copy-states separated by a gap with no data should be collapsed}
+
+\item{numeric.return}{}
 }
 \value{
 List containing and element for each chromosome with the copy-number changepoints at each breakpoint

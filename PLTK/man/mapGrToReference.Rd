@@ -12,6 +12,8 @@ mapGrToReference(gr, ref.gr, overlap = "mode", mode.type = "normal")
 \item{ref.gr}{[GRanges]: Target GRanges object to map to}
 
 \item{overlap}{[Character]: How to handle when multiple ranges from input_GRanges are within a single bin of the target_GRanges.  Options: "mode", "mean", "null" (all are weighted by segment sizes)}
+
+\item{mode.type}{[Character]: "normal" or  "quick"}
 }
 \value{
 The same Target GRanges object with elementMetadata() filled in

@@ -10,6 +10,8 @@ sigSegSize(gr, normalize = FALSE, numeric.return = FALSE)
 \item{gr}{[GRanges]: GRanges object}
 
 \item{normalize}{[Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes}
+
+\item{numeric.return}{}
 }
 \value{
 List of segment sizes

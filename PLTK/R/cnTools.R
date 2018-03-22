@@ -121,8 +121,9 @@ segfileToGr <- function(seg, col.id='SampleX'){
 #' cnTools: Convert Log2Ratio to Amp/Del
 #' @description A temporary helper function to truncate log2ratios at 0.5 and turn them into Amp (1) or Del (-1)
 #'
-#' @param [GRanges]: seg.gr A GRanges object with copy-number log2ratios in elementMetadata() columns
-#' @param [Integer]: cn.thresh A log2ratio cutoff to indicate gain or loss
+#' @param seg.gr [GRanges]:  A GRanges object with copy-number log2ratios in elementMetadata() columns
+#' @param cn.thresh [Integer]: A log2ratio cutoff to indicate gain or loss
+#' @param cn.scale [Numeric]: X scale 
 #'
 #' @return
 #'
@@ -148,7 +149,7 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
 #' @description A wrapper to take any kind of copy-number data and convert it to a GRanges object with elementMetadata() storing a matrix of all copy-number values
 #'
 #' @param cnsegs Copy-number data: QDNAseq object, or .seg data frame
-#' @param [Character]: type Specification of data type: "QDNAseq", or "segfile"
+#' @param type [Character]: Specification of data type: "QDNAseq", or "segfile"
 #'
 #' @return A Granges object with all samples combined into one singular matrix.  All copy-number values are stored in elementMetadata()
 #' @import GenomicRanges QDNAseq
@@ -196,10 +197,11 @@ convertToGr <- function(cnsegs, type='Unknown'){
 #' cnTools: Wrapper for copy-number metrics
 #' @description A wrapper to run copy-number analysis on a GRanges copy-number dataset with copy-number values stored in elementMetadata().  These metrics include calculating genomic fraction and wGII scores (bp) for gains, losses, or any CN-abberation.
 #'
-#' @param [GRanges]: gr GRanges object
-#' @param [Character]: cn.stat 'all' for all CN-aberrations or 'gain' or 'loss'
-#' @param [Integer]: copy.neutral Integer specifying what a copy-neutral value is [default = 0]
-#' @param [Character]: analysis The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)
+#' @param gr [GRanges]:  GRanges object
+#' @param cn.stat [Character]:  'all' for all CN-aberrations or 'gain' or 'loss'
+#' @param copy.neutral [Integer]:  Integer specifying what a copy-neutral value is [default = 0]
+#' @param analysis [Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)
+#' @param ... 
 #'
 #' @return
 #' @export
@@ -218,10 +220,7 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, ...){
 #' cnTools: Wrapper for copy-number metrics
 #' @description Calculates Genomic Fraction or wGII scores. Refer to cnMetrics for more detail.
 #'
-#' @param analysis [Character]: passed in from cnMetrics
-#' @param gr [GRanges]: passed in from cnMetrics
-#' @param [Character]: cn.stat passed in from cnMetrics
-#' @param ... 
+#' @param ... analysis, gr pass in from cnMetrics
 #'
 #' @return
 #'
@@ -329,6 +328,7 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
 #' @param gr [GRanges]: Input GRanges object with CNdata stored in elementMetadata()
 #' @param ref.gr [GRanges]: Target GRanges object to map to
 #' @param overlap [Character]: How to handle when multiple ranges from input_GRanges are within a single bin of the target_GRanges.  Options: "mode", "mean", "null" (all are weighted by segment sizes)
+#' @param mode.type [Character]: "normal" or  "quick"
 #'
 #' @return The same Target GRanges object with elementMetadata() filled in
 #' @export

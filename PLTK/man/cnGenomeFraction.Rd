@@ -7,13 +7,7 @@
 cnGenomeFraction(...)
 }
 \arguments{
-\item{...}{}
-
-\item{analysis}{[Character]: passed in from cnMetrics}
-
-\item{gr}{[GRanges]: passed in from cnMetrics}
-
-\item{[Character]:}{cn.stat passed in from cnMetrics}
+\item{...}{analysis, gr pass in from cnMetrics}
 }
 \value{
 

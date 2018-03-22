@@ -10,6 +10,8 @@ sigBinBreakpoints(gr, bins, numeric.return = FALSE)
 \item{gr}{GRanges object of your segments}
 
 \item{bins}{GRanges object of the genome binned into set segment sizes [i.e. PLTK::bins]}
+
+\item{numeric.return}{}
 }
 \value{
 A list containing two elements:

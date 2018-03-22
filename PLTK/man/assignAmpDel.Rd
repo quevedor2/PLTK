@@ -7,9 +7,11 @@
 assignAmpDel(seg.gr, cn.thresh = 0.5, cn.scale = 0)
 }
 \arguments{
-\item{[GRanges]:}{seg.gr A GRanges object with copy-number log2ratios in elementMetadata() columns}
+\item{seg.gr}{[GRanges]:  A GRanges object with copy-number log2ratios in elementMetadata() columns}
 
-\item{[Integer]:}{cn.thresh A log2ratio cutoff to indicate gain or loss}
+\item{cn.thresh}{[Integer]: A log2ratio cutoff to indicate gain or loss}
+
+\item{cn.scale}{[Numeric]: X scale}
 }
 \value{
 

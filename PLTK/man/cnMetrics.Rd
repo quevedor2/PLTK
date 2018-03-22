@@ -8,13 +8,15 @@ cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
   ...)
 }
 \arguments{
-\item{[GRanges]:}{gr GRanges object}
+\item{analysis}{[Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)}
 
-\item{[Character]:}{cn.stat 'all' for all CN-aberrations or 'gain' or 'loss'}
+\item{gr}{[GRanges]:  GRanges object}
 
-\item{[Integer]:}{copy.neutral Integer specifying what a copy-neutral value is [default = 0]}
+\item{cn.stat}{[Character]:  'all' for all CN-aberrations or 'gain' or 'loss'}
 
-\item{[Character]:}{analysis The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)}
+\item{copy.neutral}{[Integer]:  Integer specifying what a copy-neutral value is [default = 0]}
+
+\item{...}{}
 }
 \description{
 A wrapper to run copy-number analysis on a GRanges copy-number dataset with copy-number values stored in elementMetadata().  These metrics include calculating genomic fraction and wGII scores (bp) for gains, losses, or any CN-abberation.

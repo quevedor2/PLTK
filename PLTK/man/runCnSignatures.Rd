@@ -14,6 +14,18 @@ runCnSignatures(gr, binsize = 1e+06, bins = PLTK::bins,
 \item{binsize}{[Integer]: Maximum size of segments to be considered in a small-CN cluster [Default: 1000000]}
 
 \item{bins}{[GRanges]: A pre-made GRanges object where the genome is binned into smaller segment [Default: PLTK::bins]}
+
+\item{gap}{}
+
+\item{gap.type}{}
+
+\item{assign.amp.del}{}
+
+\item{cn.thresh}{}
+
+\item{cn.scale}{}
+
+\item{...}{}
 }
 \value{
 [List]: List of all signatures List[[each sample]][[Signature1]]

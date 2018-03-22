@@ -17,6 +17,8 @@ sigGapDist(gr, gap = PLTK::hg19.centromeres, gap.type = "centromeres",
 \item{normalize}{[Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes}
 
 \item{verbose}{[Boolean]: Prints out extra debug info}
+
+\item{numeric.return}{}
 }
 \value{
 List of distances from the telomere or centromere

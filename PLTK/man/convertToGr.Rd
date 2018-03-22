@@ -9,7 +9,7 @@ convertToGr(cnsegs, type = "Unknown")
 \arguments{
 \item{cnsegs}{Copy-number data: QDNAseq object, or .seg data frame}
 
-\item{[Character]:}{type Specification of data type: "QDNAseq", or "segfile"}
+\item{type}{[Character]: Specification of data type: "QDNAseq", or "segfile"}
 }
 \value{
 A Granges object with all samples combined into one singular matrix.  All copy-number values are stored in elementMetadata()

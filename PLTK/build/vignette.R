@@ -42,13 +42,13 @@ example <- "~/Desktop/example.seg"
 seg <- read.table(example, header = TRUE,
                   check.names = FALSE, stringsAsFactors = FALSE)
 
-gr1 <- convertToGr(copyNumbersCalled)
+#gr1 <- convertToGr(copyNumbersCalled)
 gr2 <- convertToGr(seg, type='segfile')
-gr <- aggregateGr(list(gr1, gr2))
+#gr <- aggregateGr(list(gr1, gr2))
 gr.cn <- gr2
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='wgii', gr=gr, cn.stat=x, copy.neutral=0))
 sapply(c("gain", "loss", "all"), function(x) cnMetrics(analysis='gf', gr=gr, cn.stat=x, copy.neutral=0))
-all.sigs <- runCnSignatures(gr=gr, binsize=50000, bins=PLTK::bins, 
+all.sigs <- runCnSignatures(gr=gr.cn, binsize=50000, bins=PLTK::bins, 
                             assign.amp.del = FALSE, cn.thresh=0.5, cn.scale=2,
                             numeric.return=TRUE)
 summarizeSignatures(all.sigs, ids=colnames(elementMetadata(gr)))

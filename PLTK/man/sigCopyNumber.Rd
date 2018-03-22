@@ -13,6 +13,8 @@ sigCopyNumber(gr, weight = TRUE, normalize = FALSE,
 \item{weight}{[Boolean]: Weight the copy-number for a segment based on the size of the segment}
 
 \item{normalize}{[Boolean]: Normalize by chromosome lengths; uses PLTK::hg19.cytobands as default chromosome sizes}
+
+\item{numeric.return}{}
 }
 \value{
 Dataframe of copy-number values for each chromosome

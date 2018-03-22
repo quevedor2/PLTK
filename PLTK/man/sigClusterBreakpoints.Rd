@@ -10,6 +10,8 @@ sigClusterBreakpoints(gr, binsize, numeric.return = FALSE)
 \item{gr}{A granges object}
 
 \item{binsize}{A set binsize (bp)}
+
+\item{numeric.return}{}
 }
 \value{
 \code{segs.list}: A list of genomicRanges objects for genomic regions with continuous segments smaller than binsize
