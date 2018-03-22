@@ -171,6 +171,7 @@ initializeGrPlot <- function(cytoband.gr, target.chr=NULL,
 #' @param cen.col [Character]: Colour for centromere segments
 #' @param plot.cband [Boolean]: Toggle for plotting cytobands or not; will always plot centromeres
 #' @param alpha.factor [Integer]: How many times to dilute the intensity of the colours, i.e. 2 will dilute the colours 2x [Default: 2]
+#' @param allow.alpha [Boolean]: scales::alpha doesn't work on Samwise, so this allows the trigger to remove the opacity factor in the hex code
 #'
 #' @return
 #' @export
@@ -197,6 +198,7 @@ getGieCol <- function(gie, gie.col='black', cen.col='red',
   cols[cen.idx] <- cen.col
   cols <- scales::alpha(cols, gie)
   if(!allow.alpha) cols <- gsub("..$", "", cols)
+  if(!allow.alpha) cols[c(1:length(cols))[-grep("#FF0000", cols)]] <- "white"
   cols
 }
 
