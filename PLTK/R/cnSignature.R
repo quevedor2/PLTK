@@ -321,7 +321,8 @@ summarizeSignatures <- function(sig, ids=NULL, decompose=TRUE,
   require(mclust)
   require(psych)
   sig.metrics <- lapply(sig, function(y) sapply(y, function(x){
-    cbind(describe(x), "modality"=Mclust(x)$G)
+    cbind(describe(x), 
+          "modality"=if(length(unique(x) < 3)) 1 else Mclust(x)$G)
   })[sig.metric.values,])
   if(decompose){
     sig.matrix <- round(sapply(sig.metrics, as.numeric), 3)
