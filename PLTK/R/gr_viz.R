@@ -42,7 +42,8 @@ plotGrMetadata <- function(gr,  plot.settings, data.type='cn', target.chr=NULL,
   }
   
   for(each.chr.idx in chr.ords){
-    chr.end <- chr.ends[each.chr.idx,'ends']
+    chr.idx <- grep(paste0("^", all.chrs[each.chr.idx], "$"), rownames(chr.ends))
+    chr.end <- chr.ends[chr.idx,'ends']
     gr.chr <- gr[seqnames(gr) == all.chrs[each.chr.idx]]
     if(add.axis & !is.null(target.chr)) axis(side = side, 
                                              at=seq(xrange[1], xrange[2], by=diff(xrange)/axis.marks),
@@ -50,7 +51,7 @@ plotGrMetadata <- function(gr,  plot.settings, data.type='cn', target.chr=NULL,
                                                                  by=diff(c(1, chr.end))/axis.marks)/1000000), 0))
     
     # Calculate the adjusted start/end index
-    adj.x <- chr.ends[each.chr.idx, 'cumStarts']
+    adj.x <- chr.ends[chr.idx, 'cumStarts']
     print(adj.x)
     switch(data.type,
            cn=addCnSegs(gr.chr=gr.chr, adj.x=adj.x, ...),
