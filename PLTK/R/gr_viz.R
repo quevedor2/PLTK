@@ -261,7 +261,19 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
 #'
 #' @examples
 addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
-                          add.y.axis=FALSE, add.annotations=TRUE, ...){
+                          add.y.axis=FALSE, add.annotations=TRUE,
+                          min.anno.gap=50000000, add.anno.lines=TRUE, ...){
+  strand(gr.chr) <- rep("*", length(gr.chr))
+  gr.chr <- sort(gr.chr)
+  spaceOutAnno <- function(x, min.anno.gap=50000000){
+    while(any(diff(x) < min.anno.gap)){
+      x.idx <- which(diff(x) < min.anno.gap)
+      gapped.x <- sapply(x.idx, function(idx) (x[idx] + min.anno.gap))
+      x[x.idx + 1] <- gapped.x
+    }
+    x
+  }
+  
   if(add.annotations) {
     anno.yrange  <- c(min(yrange), max(yrange) + (diff(yrange) * anno.track))
   } else {
@@ -271,15 +283,20 @@ addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
   s.idx <- start(gr.chr) + adj.x
   e.idx <- end(gr.chr) + adj.x
   
-  mid.idx <- apply(matrix(c(s.idx, e.idx), ncol=2), 1, mean)
+  point.loci <- apply(matrix(c(s.idx, e.idx), ncol=2), 1, mean)
+  anno.loci <- spaceOutAnno(point.loci, min.anno.gap)
   print(gr.chr$zscore)
-  points(x = mid.idx, y=gr.chr$zscore, 
+  
+    
+  points(x = point.loci, y=gr.chr$zscore, 
          pch=19, col="black")
   
   abline(h = 0, col="grey", lty=1)
   if(add.annotations){
     abline(h = max(yrange), lty=3, col="grey")
-    text(x = mid.idx, y=(max(yrange) + anno.track / 10), 
+    if(add.anno.lines) segments(x0 = point.loci, y0 = gr.chr$zscore, 
+                                x1 = anno.loci, y1 = (max(yrange) + anno.track / 10))
+    text(x = anno.loci, y=(max(yrange) + anno.track / 10), 
          labels = gr.chr$symbol, adj=0, srt=90, ...)
   }
   if(add.y.axis) axis(side =2, las=2)

@@ -63,7 +63,7 @@ seqlevelsStyle(tad.gr) <- 'UCSC'
 mapped.ref.gr <- mapGrToReference(gr, tad.gr, overlap='mode')
 
 
-t.chr <- 'chr5'
+t.chr <- NULL
 split.screen(c(3, 1))
 screen(3)
 par(mar=c(2, 4.1, 0.5, 2.1))
@@ -84,9 +84,9 @@ suppressWarnings(plotGrMetadata(gr.expr, plot.settings, data.type='expr',
                                 yrange=c(0,5), side=3,
                                 add.axis=TRUE, axis.mark=4, add.y.axis=TRUE,
                                 anno.track=0.4, add.annotations=TRUE,
-                                cex=0.5,target.chr=t.chr))
+                                cex=0.5, min.anno.gap=60000000, add.anno.lines=FALSE,
+                                target.chr=t.chr))
 close.screen(all.screens=TRUE)
-
 
 
 
