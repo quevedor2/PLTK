@@ -262,10 +262,11 @@ addCytobands <- function(s.idx, e.idx, bot.idx=0.1, top.idx=0.9,
 #' @examples
 addExprScores <- function(gr.chr, yrange, adj.x, anno.track=0.25,
                           add.y.axis=FALSE, add.annotations=TRUE,
-                          min.anno.gap=50000000, add.anno.lines=TRUE, ...){
+                          min.anno.gap=50, add.anno.lines=TRUE, ...){
   strand(gr.chr) <- rep("*", length(gr.chr))
   gr.chr <- sort(gr.chr)
-  spaceOutAnno <- function(x, min.anno.gap=50000000){
+  spaceOutAnno <- function(x, min.anno.gap=50){
+    min.anno.gap <- min.anno.gap * 1000000
     while(any(diff(x) < min.anno.gap)){
       x.idx <- which(diff(x) < min.anno.gap)
       gapped.x <- sapply(x.idx, function(idx) (x[idx] + min.anno.gap))
