@@ -43,6 +43,10 @@ seg <- read.table(example, header = TRUE,
                   check.names = FALSE, stringsAsFactors = FALSE)
 
 #gr1 <- convertToGr(copyNumbersCalled)
+bins10 <- getBinAnnotations(10)
+bins10 <- makeGRangesFromDataFrame(bins10@data, keep.extra.columns = TRUE)
+seqlevelsStyle(bins10) <- 'UCSC'
+
 gr2 <- convertToGr(seg, type='segfile')
 #gr <- aggregateGr(list(gr1, gr2))
 gr.cn <- gr2
@@ -61,9 +65,11 @@ tad <- read.table(tad, sep="\t", header=FALSE, col.names = c("chr", "start", "en
 tad.gr <- makeGRangesFromDataFrame(tad)
 seqlevelsStyle(tad.gr) <- 'UCSC'
 mapped.ref.gr <- mapGrToReference(gr, tad.gr, overlap='mode')
+mapped.ref.gr <- mapGrToReference(gr.cn, bins10, overlap='mode')
 
 
-t.chr <- NULL
+
+t.chr <- "chr5"
 split.screen(c(3, 1))
 screen(3)
 par(mar=c(2, 4.1, 0.5, 2.1))
@@ -84,7 +90,7 @@ suppressWarnings(plotGrMetadata(gr.expr, plot.settings, data.type='expr',
                                 yrange=c(0,5), side=3,
                                 add.axis=TRUE, axis.mark=4, add.y.axis=TRUE,
                                 anno.track=0.4, add.annotations=TRUE,
-                                cex=0.5, min.anno.gap=60000000, add.anno.lines=FALSE,
+                                cex=0.5, min.anno.gap=60, add.anno.lines=TRUE,
                                 target.chr=t.chr))
 close.screen(all.screens=TRUE)
 
