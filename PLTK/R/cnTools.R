@@ -7,11 +7,21 @@
 #' @import TxDb.Hsapiens.UCSC.hg19.knownGene GenomicRanges
 #' 
 #' @examples getGenes()
-getGenes <- function(){
-  suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg19.knownGene))
-  suppressPackageStartupMessages(require(GenomicRanges))
-  if(!exists("TxDb.Hsapiens.UCSC.hg19.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg19.knownGene")
-  genes0 <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+getGenes <- function(genome.build="hg19"){
+    switch(genome.build,
+         hg19={
+           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg19.knownGene))
+           if(!exists("TxDb.Hsapiens.UCSC.hg19.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg19.knownGene")
+           package <- TxDb.Hsapiens.UCSC.hg19.knownGene
+           },
+         hg38={
+           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg38.knownGene))
+           if(!exists("TxDb.Hsapiens.UCSC.hg38.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg38.knownGene")
+           package <- TxDb.Hsapiens.UCSC.hg38.knownGene
+           },
+         stop("genome must be 'hg19' or 'hg38'"))
+  
+  genes0 <- genes(package)
   idx <- rep(seq_along(genes0), elementNROWS(genes0$gene_id))
   genes <- granges(genes0)[idx]
   genes$gene_id = unlist(genes0$gene_id)
@@ -149,7 +159,7 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
 #' @description A wrapper to take any kind of copy-number data and convert it to a GRanges object with elementMetadata() storing a matrix of all copy-number values
 #'
 #' @param cnsegs Copy-number data: QDNAseq object, or .seg data frame
-#' @param type [Character]: Specification of data type: "QDNAseq", or "segfile"
+#' @param type [Character]: Specification of data type: "Qcalls", "Qsegmented", or "segfile"
 #'
 #' @return A Granges object with all samples combined into one singular matrix.  All copy-number values are stored in elementMetadata()
 #' @import GenomicRanges QDNAseq
@@ -157,10 +167,15 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
 #'
 #' @examples
 convertToGr <- function(cnsegs, type='Unknown'){
-  if(class(cnsegs) == 'QDNAseqCopyNumbers' || type == 'QDNAseq'){
+  if(class(cnsegs) == 'QDNAseqCopyNumbers'){
     suppressPackageStartupMessages(require(QDNAseq))
     gr <- makeGRangesFromDataFrame(cnsegs@featureData@data, keep.extra.columns=FALSE)
-    elementMetadata(gr) <- QDNAseq:::calls(cnsegs)
+    if(type == 'Qcalls'){
+      elementMetadata(gr) <- QDNAseq:::calls(cnsegs)
+    } else if(type == 'Qsegmented'){
+      elementMetadata(gr) <- QDNAseq:::segmented(cnsegs)
+    }
+    
   } else if(is.data.frame(cnsegs) && type == 'segfile'){
     suppressPackageStartupMessages(require(GenomicRanges))
     warning("SEGFILE: Assuming segfile standard outlined at https://software.broadinstitute.org/software/igv/sites/cancerinformatics.org.igv/files/linked_files/example.seg")
@@ -456,7 +471,8 @@ mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
 #' @examples
 overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"), 
                                  chr_id='chr', overlap){
-  all.ref.gr.chr <- lapply(as.character(seqnames(sort(ref.gr))@values), function(each_chr){
+  gr.chrs <- as.character(seqnames(sort(ref.gr))@values)
+  all.ref.gr.chr <- lapply(gr.chrs, function(each_chr){
     print(paste0("Running overlap ", each_chr, "..."))
     target.chr <- getGrCoords(ref.gr[seqnames(ref.gr) == each_chr])
     h_chr <- getGrCoords(gr[seqnames(gr) == each_chr])
@@ -498,6 +514,16 @@ overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"),
     })
     ref.gr.chr
   })
+  
+  samples.per.chr <- sapply(all.ref.gr.chr, function(x) ncol(x@elementMetadata))
+  chr.rm.idx <- which(samples.per.chr != ncol(gr@elementMetadata))
+  
+  if(length(chr.rm.idx) != 0){
+    warning(paste0(paste(gr.chrs[chr.rm.idx], collapse=","), " did not return matching samples"))
+    all.ref.gr.chr <- all.ref.gr.chr[-chr.rm.idx]
+  }
+  
+  
   Reduce(c, all.ref.gr.chr)
   
 }
@@ -524,5 +550,23 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
   as.data.frame(gr.df)
 }
 
+cnDist <- function(gr, method="euclidean"){
+  egr <- as.matrix(gr@elementMetadata)
+  
+  switch(method,
+         "mhamming"={
+           dist.mat <- apply(egr, 2, function(x){
+             mat.x <- abs(matrix(rep(x, ncol(egr)), ncol=ncol(egr)) - egr)
+             apply(mat.x, 2, sum, na.rm=TRUE)
+           })
+         },
+         "pearson"={
+           dist.mat <- round(cor(as.matrix(egr), use="pairwise.complete.obs"), 2)
+           dist.mat <- dist.mat + 1
+         },
+         stop("Please provide a valid distance metric: 'euclidean', 'pearson', 'mhamming'")
+         )
+  dist.mat
+}
 
 
