@@ -551,6 +551,16 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
   as.data.frame(gr.df)
 }
 
+#----------------------------------------------------------------------------------------
+#' cnTools: Calculate distances between CN-profiles
+#'
+#' @param gr GRanges object
+#' @param method 'euclidean', 'mhamming'=modified hamming, 'pearson'
+#'
+#' @return
+#' @export
+#'
+#' @examples
 cnDist <- function(gr, method="euclidean"){
   egr <- as.matrix(gr@elementMetadata)
   
