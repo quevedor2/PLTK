@@ -4,7 +4,7 @@
 \alias{segfileToGr}
 \title{cnTools: Converts the .seg file to a GRanges object}
 \usage{
-segfileToGr(seg, col.id = "SampleX")
+segfileToGr(seg, col.id = "SampleX", seg.id = "seg.mean")
 }
 \arguments{
 \item{seg}{A dataframe containing the seg file, with headers}

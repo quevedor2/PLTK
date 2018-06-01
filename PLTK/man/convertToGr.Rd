@@ -4,7 +4,7 @@
 \alias{convertToGr}
 \title{cnTools: Convert to GRanges Wrapper}
 \usage{
-convertToGr(cnsegs, type = "Unknown")
+convertToGr(cnsegs, type = "Unknown", assign.integer = FALSE, ...)
 }
 \arguments{
 \item{cnsegs}{Copy-number data: QDNAseq object, or .seg data frame}
