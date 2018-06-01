@@ -215,6 +215,7 @@ convertToGr <- function(cnsegs, type='Unknown'){
 #' @param gr [GRanges]:  GRanges object
 #' @param cn.stat [Character]:  'all' for all CN-aberrations or 'gain' or 'loss'
 #' @param copy.neutral [Integer]:  Integer specifying what a copy-neutral value is [default = 0]
+#' @param cn.variance [Numeric]:  Numeric specifying how much range, if any, should be applied to copy.neutral[default = 0]
 #' @param analysis [Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)
 #' @param ... 
 #'
@@ -222,11 +223,11 @@ convertToGr <- function(cnsegs, type='Unknown'){
 #' @export
 #'
 #' @examples
-cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0){
+cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.variance=0){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
   switch(analysis,
-         gf=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral),
-         wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral),
+         gf=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+         wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          stop("analysis not recognized")
   )
 }
@@ -244,13 +245,13 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0){
 #' @return
 #'
 #' @examples
-cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral){
+cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.variance){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
   getGFdata <- function(each.cn, copy.neutral=0, ...){
     na.idx <- (is.na(each.cn))
-    gain.idx <- (each.cn > copy.neutral)
-    loss.idx <- (each.cn < copy.neutral)
-    neutral.idx <- (each.cn == copy.neutral)
+    gain.idx <- (each.cn > (copy.neutral + cn.variance))
+    loss.idx <- (each.cn < (copy.neutral - cn.variance))
+    neutral.idx <- (each.cn >= (copy.neutral - cn.variance)) & (each.cn <= (copy.neutral + cn.variance))
     
     total.genome.size <- sum(as.numeric(width(gr)))
     non.na.genome.size <- sum(as.numeric(width(gr[which(!na.idx),])))

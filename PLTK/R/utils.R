@@ -184,11 +184,22 @@ legend.col <- function(col, lev){
     
   }
   par(new = TRUE)
-  plot(0, 0, type = "n",
-       ylim = c(min(lev), max(lev)),
-       yaxt = "n", ylab = "",
-       xaxt = "n", xlab = "",
-       frame.plot = FALSE)
-  axis(side = 4, las = 2, tick = FALSE, line = .25)
+  if(is.character(lev)){
+    plot(0, 0, type = "n",
+         ylim = c(1, length(lev)),
+         yaxt = "n", ylab = "",
+         xaxt = "n", xlab = "",
+         frame.plot = FALSE)
+    axis(side = 4, las = 2, at = seq(1, length(lev)), 
+         labels=lev, tick = FALSE, line = .25)
+  } else {
+    plot(0, 0, type = "n",
+         ylim = c(min(lev), max(lev)),
+         yaxt = "n", ylab = "",
+         xaxt = "n", xlab = "",
+         frame.plot = FALSE)
+    axis(side = 4, las = 2, tick = FALSE, line = .25)
+  }
+
   par <- opar
 }
