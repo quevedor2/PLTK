@@ -96,7 +96,7 @@ aggregateGr <- function(list.gr){
         mat.blank[queryHits(olaps), ] <- meta.z[subjectHits(olaps)]
         mat.blank
       })
-      as.data.frame(mat.fill)
+      as.data.frame(mat.fill, check.names=FALSE)
     }, int.gr=int.gr)
     
     # Combining the x-y elements back into the intersected GRanges object
@@ -119,10 +119,10 @@ aggregateGr <- function(list.gr){
 #' @import GenomicRanges
 #'
 #' @examples
-segfileToGr <- function(seg, col.id='SampleX'){
+segfileToGr <- function(seg, col.id='SampleX', seg.id='seg.mean'){
   suppressPackageStartupMessages(require(GenomicRanges))
   gr.tmp <- makeGRangesFromDataFrame(seg, keep.extra.columns=FALSE)
-  elementMetadata(gr.tmp)$seg.mean <- seg$seg.mean
+  elementMetadata(gr.tmp)$seg.mean <- as.numeric(seg[,seg.id])
   colnames(elementMetadata(gr.tmp)) <- col.id
   gr.tmp
 }
@@ -166,7 +166,7 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
 #' @export
 #'
 #' @examples
-convertToGr <- function(cnsegs, type='Unknown'){
+convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
   if(class(cnsegs) == 'QDNAseqCopyNumbers'){
     suppressPackageStartupMessages(require(QDNAseq))
     gr <- makeGRangesFromDataFrame(cnsegs@featureData@data, keep.extra.columns=FALSE)
@@ -185,7 +185,7 @@ convertToGr <- function(cnsegs, type='Unknown'){
     all.segfiles <- lapply(seq_along(cnsegs.id), function(seg.idx) {
       seg <- cnsegs.id[[seg.idx]]
       col.id <- names(cnsegs.id)[seg.idx]
-      segfileToGr(seg, col.id)
+      segfileToGr(seg, col.id, ...)
     })
     
     # Aggregate all granges objects into one single GRanges
@@ -196,7 +196,7 @@ convertToGr <- function(cnsegs, type='Unknown'){
     }
     
     # Classify as AMP or DEL based on log2 ratio cutoffs
-    gr <- assignAmpDel(segfile.gr)
+    if(assign.integer) gr <- assignAmpDel(segfile.gr) else  gr <- segfile.gr
     gr
   } else {
     warning("Could not type of input segs")
@@ -205,6 +205,7 @@ convertToGr <- function(cnsegs, type='Unknown'){
   seqlevelsStyle(gr) <- 'UCSC'
   seq.ids <- gsub("chr24", "chrY", gsub("chr23", "chrX", seqlevels(gr)))
   gr <- renameSeqlevels(gr,seq.ids)
+  colnames(gr@elementMetadata) <- gsub("^X([0-9])", "\\1", colnames(gr@elementMetadata))
   gr
 }
 
@@ -247,7 +248,7 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.va
 #' @examples
 cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.variance){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
-  getGFdata <- function(each.cn, copy.neutral=0, ...){
+  getGFdata <- function(each.cn, ...){
     na.idx <- (is.na(each.cn))
     gain.idx <- (each.cn > (copy.neutral + cn.variance))
     loss.idx <- (each.cn < (copy.neutral - cn.variance))
@@ -270,7 +271,7 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   # Cycles through each chromosome to get all the CN data for all samples
   chr.gf.data <- lapply(as.character(seqnames(gr)@values), function(chr.id){
     gr.chr <- gr[seqnames(gr) == chr.id]
-    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
+    gf.chr <- apply(elementMetadata(gr.chr)[,1:5], 2, getGFdata)
     rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
     gf.chr
   })
@@ -279,20 +280,22 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   # Goes through all CN data to give back Genomic Fraction or wGII scores
   cn.row.idx <- grep(cn.stat, rownames(chr.gf.data[[1]]))
   total.row.idx <- grep("non.na", rownames(chr.gf.data[[1]]))
+  
+  # Calculates PGA (percentage genome altered)
+  cnstat.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE])
+  total.mat <- sapply(chr.gf.data, function(x) x[total.row.idx,,drop=FALSE])
+  gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(total.mat, 1, sum, na.rm=TRUE)
+  names(gf.scores) <- colnames(chr.gf.data[[1]])
+  
+  # Calculates wgII
+  wgii.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE] / x[total.row.idx,,drop=FALSE])
+  wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
+  names(wgii.scores) <- colnames(chr.gf.data[[1]])
+
   switch(analysis,
-         gf={
-           cnstat.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE])
-           total.mat <- sapply(chr.gf.data, function(x) x[total.row.idx,,drop=FALSE])
-           gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(total.mat, 1, sum, na.rm=TRUE)
-           names(gf.scores) <- colnames(chr.gf.data[[1]])
-           gf.scores
-         },
-         wgii={
-           wgii.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE] / x[total.row.idx,,drop=FALSE])
-           wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
-           names(wgii.scores) <- colnames(chr.gf.data[[1]])
-           wgii.scores
-         },
+         gf=gf.scores,
+         wgii=wgii.scores,
+         both=list("gf"=gf.scores, "wgii"=wgii.scores),
          stop("analysis incorrectly specified"))
 
 }
