@@ -4,7 +4,8 @@
 \alias{cnMetrics}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0)
+cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
+  cn.variance = 0)
 }
 \arguments{
 \item{analysis}{[Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)}
@@ -14,6 +15,8 @@ cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0)
 \item{cn.stat}{[Character]:  'all' for all CN-aberrations or 'gain' or 'loss'}
 
 \item{copy.neutral}{[Integer]:  Integer specifying what a copy-neutral value is [default = 0]}
+
+\item{cn.variance}{[Numeric]:  Numeric specifying how much range, if any, should be applied to copy.neutral[default = 0]}
 
 \item{...}{}
 }

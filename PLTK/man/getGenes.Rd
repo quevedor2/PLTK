@@ -4,7 +4,7 @@
 \alias{getGenes}
 \title{cnTools: get Genes in TxDb.Hsapiens.UCSC.hg19.knownGene}
 \usage{
-getGenes()
+getGenes(genome.build = "hg19")
 }
 \value{
 A Granges object containing strand-specific genes with EntrezIDs
