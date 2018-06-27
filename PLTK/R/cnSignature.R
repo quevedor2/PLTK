@@ -320,10 +320,12 @@ summarizeSignatures <- function(sig, ids=NULL, decompose=TRUE,
                                 sig.metric.values = c('mean', 'sd', 'skew', 'kurtosis', 'modality')){
   require(mclust)
   require(psych)
-  sig.metrics <- lapply(sig, function(y) sapply(y, function(x){
-    cbind(describe(x), 
-          "modality"=if(length(unique(x) < 3)) 1 else Mclust(x)$G)
-  })[sig.metric.values,])
+  sig.metrics <- tryCatch({
+    lapply(sig, function(y) sapply(y, function(x) { 
+      cbind(describe(x), 
+            "modality"=if(length(unique(x) < 3)) 1 else Mclust(x)$G)
+      })[sig.metric.values,])
+    }, error=function(e){NA})
   if(decompose){
     sig.matrix <- round(sapply(sig.metrics, as.numeric), 3)
     if(!is.null(ids)) colnames(sig.matrix) <- ids

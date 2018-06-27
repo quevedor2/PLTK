@@ -203,3 +203,52 @@ legend.col <- function(col, lev){
 
   par <- opar
 }
+
+#' Summarizes all numeric values in a dataframe
+#'
+#' @param df A dataframe to try and summarize
+#'
+#' @return
+#' @export
+#'
+#' @examples
+summarizeNumColumns <- function(df){
+  # Calculates the mean of each column of metadata, if possible
+  apply(df, 2, function(x){
+    if(Hmisc::all.is.numeric(na.omit(x))) {
+      round(mean(as.numeric(as.character(x)), na.rm=TRUE), 3)
+    } else {
+      uniq.x <- unique(as.character(x))
+      if(length(uniq.x) > 1){
+        warning(paste0("A character vector contains heterogeneity. 
+                       Simplifying to the first pick:", paste(x, collapse=",")))
+        uniq.x <- uniq.x[1]
+      }
+      uniq.x
+    }
+    })  
+}
+
+#' Converts factors to numeric or character in a data frame
+#'
+#' @param df 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+removeFactors <- function(df){
+  if(is.data.frame(df) & (ncol(df) >= 1)){
+    for(each.col in seq_along(colnames(df))){
+      if(all.is.numeric(na.omit(df[,each.col]))){
+        df[,each.col] <- as.numeric(as.character(df[,each.col]))
+      } else {
+        df[,each.col] <- as.character(df[,each.col])
+      }
+    }
+  } else {
+    stop("This is only tested on dataframes")
+  }
+  
+  df
+}

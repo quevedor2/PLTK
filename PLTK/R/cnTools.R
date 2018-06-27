@@ -217,7 +217,7 @@ convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
 #' @param cn.stat [Character]:  'all' for all CN-aberrations or 'gain' or 'loss'
 #' @param copy.neutral [Integer]:  Integer specifying what a copy-neutral value is [default = 0]
 #' @param cn.variance [Numeric]:  Numeric specifying how much range, if any, should be applied to copy.neutral[default = 0]
-#' @param analysis [Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)
+#' @param analysis [Character]:  The analysis to perform: "pga" percent genome altered, "wgii" for wGII scores (genomic fraction normalized for chromosome), "pga.wgii" for both,
 #' @param ... 
 #'
 #' @return
@@ -227,8 +227,9 @@ convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
 cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.variance=0){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
   switch(analysis,
-         gf=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+         pga=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+         pga_wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          stop("analysis not recognized")
   )
 }
@@ -271,7 +272,7 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   # Cycles through each chromosome to get all the CN data for all samples
   chr.gf.data <- lapply(as.character(seqnames(gr)@values), function(chr.id){
     gr.chr <- gr[seqnames(gr) == chr.id]
-    gf.chr <- apply(elementMetadata(gr.chr)[,1:5], 2, getGFdata)
+    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
     rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
     gf.chr
   })
@@ -295,7 +296,7 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   switch(analysis,
          gf=gf.scores,
          wgii=wgii.scores,
-         both=list("gf"=gf.scores, "wgii"=wgii.scores),
+         pga_wgii=list("gf"=gf.scores, "wgii"=wgii.scores),
          stop("analysis incorrectly specified"))
 
 }
@@ -312,7 +313,7 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
 #' @export
 #'
 #' @examples
-collapseSample <- function(gr, sample.idx, na.rm=TRUE){
+collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE){
   if(sample.idx > ncol(elementMetadata(gr))) stop("Please specify the index of a sample in elementMetadata()")
   if(is.null(sample.idx)) stop("Cannot collapse GRanges without the index of your sample in elementMetadta()")
   
@@ -322,23 +323,57 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE){
   # Parse out CN information for the sample
   reduce.list <- lapply(as.character(seqnames(gr)@values), function(each.chr){
     gr.chr <- gr[seqnames(gr)==each.chr]
-    each.sample <- elementMetadata(gr.chr)[,sample.idx]
     
-    # Reduce continuous segments into a single segment based on rle
-    rle.sample <- PLTK::getRleIdx(each.sample)
-    gr.intervals <- matrix(c(start(gr.chr), end(gr.chr)),ncol=2)
-    reduce.gr <- GRanges(seqnames=seqnames(gr.chr)[rle.sample$start.idx], 
-                         ranges = IRanges(start=gr.intervals[rle.sample$start.idx, 1],
-                                          end=gr.intervals[rle.sample$end.idx, 2]), 
-                         strand=strand(gr.chr)[rle.sample$start.idx])
-    if(any(!rle.sample$na.stat)) reduce.gr <- reduce.gr[-which(!rle.sample$na.stat),]
-
-    # Reassign copy-number values to the reduced GRanges object
-    #reduce.gr <-  Reduce(c, reduce.gr[!sapply(reduce.gr, is.null)])
-    cn.values <- rle.sample$values
-    if(na.rm) cn.values <- as.integer(na.omit(cn.values))
-    elementMetadata(reduce.gr)$x <- cn.values
-    colnames(elementMetadata(reduce.gr)) <- sample.id
+    if(!continuous.intervals){
+      gr.df <- getGrCoords(gr.chr, keep.extra.columns = TRUE) # Simplify to dataframe
+      
+      # Create intervals for a single chromosome
+      gr.df[,sample.id] <- as.character(gr.df[,sample.id])
+      gr.df <- lapply(split(gr.df, f=gr.df[,sample.id]), function(gr.cnstate){
+        reduce.gr <- reduce(IRanges(gr.cnstate$start, gr.cnstate$end))
+        
+        # Map each bin to the reduced GR
+        ol.idx <- findOverlaps(IRanges(gr.cnstate$start, gr.cnstate$end), reduce.gr)
+        
+        # Summarize the numeric values for each mapped bin
+        summ.df <- lapply(split(ol.idx, f=subjectHits(ol.idx)), function(each.bin) {
+          summarizeNumColumns(gr.cnstate[queryHits(each.bin), ,drop=FALSE])
+          })
+        summ.df <- as.data.frame(do.call("rbind", summ.df))
+        
+        # Reconstruct original reduced chromosome dataframe
+        reduce.df <- as.data.frame(reduce.gr)
+        reduce.df$chr <- summ.df$chr
+        reduce.df <- cbind(reduce.df, summ.df[,grep("strand", colnames(summ.df)):ncol(summ.df)])
+        reduce.df <- reduce.df[,colnames(summ.df)]
+        
+        reduce.df
+      })
+      
+      # Reconstruct and make GRanges object
+      gr.df <- as.data.frame(do.call("rbind", gr.df))
+      reduce.gr <- makeGRangesFromDataFrame(gr.df[order(gr.df$start),], keep.extra.columns = TRUE)
+      reduce.gr
+      
+    } else if(continuous.intervals){
+      each.sample <- elementMetadata(gr.chr)[,sample.idx]
+      
+      # Reduce continuous segments into a single segment based on rle
+      rle.sample <- PLTK::getRleIdx(each.sample)
+      gr.intervals <- matrix(c(start(gr.chr), end(gr.chr)),ncol=2)
+      reduce.gr <- GRanges(seqnames=seqnames(gr.chr)[rle.sample$start.idx], 
+                           ranges = IRanges(start=gr.intervals[rle.sample$start.idx, 1],
+                                            end=gr.intervals[rle.sample$end.idx, 2]), 
+                           strand=strand(gr.chr)[rle.sample$start.idx])
+      if(any(!rle.sample$na.stat)) reduce.gr <- reduce.gr[-which(!rle.sample$na.stat),]
+  
+      # Reassign copy-number values to the reduced GRanges object
+      #reduce.gr <-  Reduce(c, reduce.gr[!sapply(reduce.gr, is.null)])
+      cn.values <- rle.sample$values
+      if(na.rm) cn.values <- as.integer(na.omit(cn.values))
+      elementMetadata(reduce.gr)$x <- cn.values
+      colnames(elementMetadata(reduce.gr)) <- sample.id
+    }
     
     reduce.gr
   })
@@ -550,7 +585,7 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
                       "start"=start(gr),
                       "end"=end(gr),
                       "strand"=strand(gr))
-  gr.df <- cbind(gr.df, as.matrix(elementMetadata(gr)))
+  gr.df <- cbind(gr.df, as.data.frame(elementMetadata(gr)))
   as.data.frame(gr.df)
 }
 
@@ -565,7 +600,7 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
 #'
 #' @examples
 cnDist <- function(gr, method="euclidean"){
-  egr <- as.matrix(gr@elementMetadata)
+  if(class(gr) == "GRanges") egr <- as.matrix(gr@elementMetadata) else egr <- t(gr)
   
   switch(method,
          "mhamming"={
@@ -583,4 +618,68 @@ cnDist <- function(gr, method="euclidean"){
   dist.mat
 }
 
+#' Cleans the segfile based on the type of input. "Cleaning" will depend on data.type
+#'
+#' @param seg A segfile read in as a dataframe
+#' @param data.type [default='ichor']
+#'
+#' @return
+#' @export
+#'
+#' @examples
+cleanSeg <- function(seg, data.type='ichor'){
+  if(data.type == 'ichor'){
+    cn.map <- list('AMP'=4, 'GAIN'=3, 'HETD'=1, 'HLAMP'=5, 'NEUT'=2,
+                   '4'='AMP', '3'='GAIN', '1'='HETD', '5'='HLAMP', '2'='NEUT')
+    
+    seg.l <- split(seg, f=seg$ID)  # Split the segfile by sample ID
+    seg.l <- lapply(seg.l, function(each.seg){
+      # Split the individual seg into subclone and clonal CN
+      seg.subclone <- split(each.seg, f=each.seg$subclone)
+      gr0 <- makeGRangesFromDataFrame(seg.subclone[['0']], keep.extra.columns = TRUE)
+      gr0 <- suppressWarnings(collapseSample(gr0, 4, continuous.intervals = FALSE))
+      
+      # Identify mean seg.mean for clonal CN-states
+      clonal.cn <- sapply(split(seg.subclone[['0']], 
+                                f=seg.subclone[['0']]$CN), 
+                          function(x) mean(x$seg.mean, na.rm=TRUE))
+      
+      if(any(grepl("1", names(seg.subclone)))){
+        # Identify mean seg.mean for subclonal stretches of cn-states
+        gr <- makeGRangesFromDataFrame(seg.subclone[['1']], keep.extra.columns = TRUE)
+        gr1 <- suppressWarnings(collapseSample(gr, 4, continuous.intervals = FALSE))
+        seg.means <- as.numeric(as.character(gr1$seg.mean))
+        
+        # Euclidean distance to the closest clonal cn-state based on seg.mean
+        seg.diff <- t(sapply(seg.means, function(x) abs(x - clonal.cn)))
+        seg.state <- apply(seg.diff, 1, function(x) which(x == min(x, na.rm=TRUE)))
+        seg.state <- sapply(seg.state, function(x) if(length(x) == 0) NA else x)
+        
+        # Relabel according to the closest clonal CN state
+        gr1$num.mark <- as.character(cn.map[as.character(seg.state)])
+        gr1$CN <- as.integer(seg.state)
+        gr1$subclone <- 1
+        
+        reduced.gr <- sort(c(gr0, gr1))
+      } else {
+        reduced.gr <- sort(gr0)
+      }
+ 
+      reduced.gr
+    })
+    
+    # Combines all GRanges; can't do do.call("c", list) since you need to instantiate as GRanges first
+    seg.acc  <- collapseSample(seg.l[[1]], 4, continuous.intervals = FALSE)
+    for(i in c(2:length(seg.l))) {
+      seg.acc <- c(seg.acc, collapseSample(seg.l[[i]], 4, continuous.intervals = FALSE))
+    }
 
+    seg <- getGrCoords(seg.acc, keep.extra.columns = TRUE)
+    seg <- seg[,c("ID", "chr", "start", "end", "num.mark", "seg.mean", "CN", "subclone")]
+    colnames(seg)[1:4] <- c("ID", "chrom", "loc.start", "loc.end")
+    
+  } else {
+    stop("Unrecognized data.type")
+  }
+  seg
+}
