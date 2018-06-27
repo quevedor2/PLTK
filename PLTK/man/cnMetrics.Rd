@@ -8,7 +8,7 @@ cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
   cn.variance = 0)
 }
 \arguments{
-\item{analysis}{[Character]:  The analysis to perform: "gf" genomic fraction, "wgii" for wGII scores (genomic fraction normalized for chromosome)}
+\item{analysis}{[Character]:  The analysis to perform: "pga" percent genome altered, "wgii" for wGII scores (genomic fraction normalized for chromosome), "pga.wgii" for both,}
 
 \item{gr}{[GRanges]:  GRanges object}
 

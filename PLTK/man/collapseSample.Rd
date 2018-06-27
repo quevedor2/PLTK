@@ -4,7 +4,7 @@
 \alias{collapseSample}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-collapseSample(gr, sample.idx, na.rm = TRUE)
+collapseSample(gr, sample.idx, na.rm = TRUE, continuous.intervals = TRUE)
 }
 \arguments{
 \item{gr}{[GRanges]: GRanges object with copy-number in elementMetadata()}
