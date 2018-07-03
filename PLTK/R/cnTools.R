@@ -330,7 +330,7 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE
       # Create intervals for a single chromosome
       gr.df[,sample.id] <- as.character(gr.df[,sample.id])
       gr.df <- lapply(split(gr.df, f=gr.df[,sample.id]), function(gr.cnstate){
-        reduce.gr <- reduce(IRanges(gr.cnstate$start, gr.cnstate$end))
+        reduce.gr <- IRanges::reduce(IRanges(gr.cnstate$start, gr.cnstate$end))
         
         # Map each bin to the reduced GR
         ol.idx <- findOverlaps(IRanges(gr.cnstate$start, gr.cnstate$end), reduce.gr)

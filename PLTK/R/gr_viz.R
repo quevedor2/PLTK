@@ -52,10 +52,10 @@ plotGrMetadata <- function(gr,  plot.settings, data.type='cn', target.chr=NULL,
     
     # Calculate the adjusted start/end index
     adj.x <- chr.ends[chr.idx, 'cumStarts']
-    print(adj.x)
     switch(data.type,
            cn=addCnSegs(gr.chr=gr.chr, adj.x=adj.x, ...),
            expr=addExprScores(gr.chr=gr.chr, yrange=yrange, adj.x=adj.x, ...),
+           bar=addBarSegs(gr.chr=gr.chr, adj.x=adj.x, gr=gr, ...),
            mutation=addMut())
   }
 }
@@ -108,10 +108,45 @@ addCnSegs <- function(gr.chr, col.ids=c(1), adj.x=0,
     top.idx <- y.space.sample + sample.pos - y.spacer
     
     print(paste0("Plotting CN for: ", each.col))
-    score <- unlist(elementMetadata(gr.chr[,each.col])@listData)
     rect(xleft = s.idx, ybottom = rep(bot.idx, length(s.idx)), 
          xright = e.idx, ytop = rep(top.idx, length(s.idx)),
          col = mapCol(score), border = NA)
+    
+    if(chr.lines) abline(v = min(s.idx), lty=2, col="grey")
+    if(chr.lines) abline(v = max(e.idx), lty=2, col="grey")
+  }
+}
+
+addBarSegs <- function(gr.chr, gr, col.ids=c(1), adj.x=0, 
+                      cn.colors = c("black"),
+                      cn.range=NULL, chr.lines=FALSE,
+                      yrange=c(0, 1), y.spacer=0.1){
+  # Gets the sgement start/end indices
+  s.idx <- start(gr.chr) + adj.x
+  e.idx <- end(gr.chr) + adj.x
+  
+  # Calculates the scaling factor to stack X number of samples in the ylim range
+  y.space.sample <- diff(yrange) / length(col.ids)
+  y.spacer <- y.space.sample * y.spacer
+  
+  for(col.idx in seq_along(col.ids)){
+    each.col <- col.ids[col.idx]
+    
+    # Calculate the y-coordinates for the copy-number rectangles
+    sample.pos <- (y.space.sample * (col.idx - 1)) # Stack samples on top of each other
+    bot.idx <- min(yrange) + sample.pos + y.spacer
+    top.idx <- y.space.sample + sample.pos - y.spacer
+    mid.idx <- bot.idx + (top.idx - bot.idx)/2
+    delta.y <- top.idx - mid.idx
+    
+    print(paste0("Plotting barplots for : ", each.col))
+
+    score <- unlist(elementMetadata(gr.chr[,each.col])@listData)
+    max.score=max(abs(elementMetadata(gr)[,each.col]))
+    scaled.score <- score*(delta.y / max.score)
+    rect(xleft = s.idx, ybottom = mid.idx, 
+         xright = e.idx, ytop = mid.idx + scaled.score,
+         col = cn.colors, border = NA)
     
     if(chr.lines) abline(v = min(s.idx), lty=2, col="grey")
     if(chr.lines) abline(v = max(e.idx), lty=2, col="grey")
