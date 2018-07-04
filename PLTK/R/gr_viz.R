@@ -117,6 +117,22 @@ addCnSegs <- function(gr.chr, col.ids=c(1), adj.x=0,
   }
 }
 
+#' Title
+#'
+#' @param gr.chr 
+#' @param gr 
+#' @param col.ids 
+#' @param adj.x 
+#' @param cn.colors 
+#' @param cn.range 
+#' @param chr.lines 
+#' @param yrange 
+#' @param y.spacer 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 addBarSegs <- function(gr.chr, gr, col.ids=c(1), adj.x=0, 
                       cn.colors = c("black"),
                       cn.range=NULL, chr.lines=FALSE,
