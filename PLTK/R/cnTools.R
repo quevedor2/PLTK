@@ -9,6 +9,11 @@
 #' @examples getGenes()
 getGenes <- function(genome.build="hg19"){
     switch(genome.build,
+         hg18={
+           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg18.knownGene))
+           if(!exists("TxDb.Hsapiens.UCSC.hg18.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg18.knownGene")
+           package <- TxDb.Hsapiens.UCSC.hg18.knownGene
+         },
          hg19={
            suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg19.knownGene))
            if(!exists("TxDb.Hsapiens.UCSC.hg19.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg19.knownGene")
@@ -47,11 +52,13 @@ annotateSegments <- function(cn.data, genes){
   suppressPackageStartupMessages(require(AnnotationDbi))
   gr0 <- cn.data
   if(class(cn.data) != 'GRanges') gr0 <- makeGRangesFromDataFrame(cn.data,keep.extra.columns=TRUE)
-  if(class(cn.data) != 'GRanges') stop("Input data could not be converted to a GRanges object")
+  #if(class(gr0) != 'GRanges') stop("Input data could not be converted to a GRanges object")
+  seqlevelsStyle(gr0) <- "UCSC"  # current: NCBI
+  if(is(genes, "TxDb")) anno = genes(genes) else anno=genes
   
-  olaps <- findOverlaps(genes, gr0, type="within")
+  olaps <- findOverlaps(anno, gr0, type="any")
   idx <- factor(subjectHits(olaps), levels=seq_len(subjectLength(olaps)))
-  gr0$gene_ids <- splitAsList(genes$gene_id[queryHits(olaps)], idx)
+  gr0$gene_ids <- splitAsList(anno$gene_id[queryHits(olaps)], idx)
   gr0$gene_ids <- lapply(gr0$gene_ids, function(input.id) {
     if(length(input.id) > 0){ 
       tryCatch({
