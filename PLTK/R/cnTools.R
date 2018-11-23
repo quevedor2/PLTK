@@ -250,14 +250,16 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.va
 #' @param gr 
 #' @param cn.stat 
 #' @param copy.neutral 
+#' @param cn.variance 
 #'
 #' @return
 #'
 #' @examples
 cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.variance){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
-  getGFdata <- function(each.cn, ...){
+  getGFdata <- function(each.cn, gr, ...){
     na.idx <- (is.na(each.cn))
+    
     gain.idx <- (each.cn > (copy.neutral + cn.variance))
     loss.idx <- (each.cn < (copy.neutral - cn.variance))
     neutral.idx <- (each.cn >= (copy.neutral - cn.variance)) & (each.cn <= (copy.neutral + cn.variance))
@@ -279,31 +281,56 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   # Cycles through each chromosome to get all the CN data for all samples
   chr.gf.data <- lapply(as.character(seqnames(gr)@values), function(chr.id){
     gr.chr <- gr[seqnames(gr) == chr.id]
-    gf.chr <- apply(elementMetadata(gr.chr), 2, getGFdata)
+    gf.chr <- apply(elementMetadata(gr.chr), 2, function(x) { 
+      getGFdata(x, gr.chr)
+    })
     rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
     gf.chr
   })
   names(chr.gf.data) <- as.character(seqnames(gr)@values)
   
   # Goes through all CN data to give back Genomic Fraction or wGII scores
-  cn.row.idx <- grep(cn.stat, rownames(chr.gf.data[[1]]))
-  total.row.idx <- grep("non.na", rownames(chr.gf.data[[1]]))
+  cn.row.idx <- sapply(cn.stat, grep, rownames(chr.gf.data[[1]]))
+  total.row.idx <- grep("total", rownames(chr.gf.data[[1]]))
+  non.na.row.idx <- grep("non.na", rownames(chr.gf.data[[1]]))
   
   # Calculates PGA (percentage genome altered)
-  cnstat.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE])
+  cnstat.list <- lapply(cn.row.idx, function(cn.idx){
+    sapply(chr.gf.data, function(x) x[cn.idx,,drop=FALSE])
+  })
   total.mat <- sapply(chr.gf.data, function(x) x[total.row.idx,,drop=FALSE])
-  gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(total.mat, 1, sum, na.rm=TRUE)
-  names(gf.scores) <- colnames(chr.gf.data[[1]])
+  non.na.mat <- sapply(chr.gf.data, function(x) x[non.na.row.idx,,drop=FALSE])
+  
+  pga <- lapply(cnstat.list, function(cnstat.mat){
+    gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(total.mat, 1, sum, na.rm=TRUE)
+    non.na.gf.scores <- apply(cnstat.mat, 1, sum, na.rm=TRUE) / apply(non.na.mat, 1, sum, na.rm=TRUE)
+    names(non.na.gf.scores) <- names(gf.scores) <- colnames(chr.gf.data[[1]])
+    list("nonNA"=non.na.gf.scores,
+         "total"=gf.scores)
+  })
   
   # Calculates wgII
-  wgii.mat <- sapply(chr.gf.data, function(x) x[cn.row.idx,,drop=FALSE] / x[total.row.idx,,drop=FALSE])
-  wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
-  names(wgii.scores) <- colnames(chr.gf.data[[1]])
-
+  wgii <- lapply(cn.row.idx, function(cn.idx){
+    wgii.mat <- sapply(chr.gf.data, function(x) x[cn.idx[1],,drop=FALSE] / x[total.row.idx,,drop=FALSE])
+    non.na.wgii.mat <- sapply(chr.gf.data, function(x) x[cn.idx,,drop=FALSE] / x[non.na.row.idx,,drop=FALSE])
+    wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
+    non.na.wgii.scores <- apply(non.na.wgii.mat, 1, mean, na.rm=TRUE)
+    names(non.na.wgii.scores) <- names(wgii.scores) <- colnames(chr.gf.data[[1]])
+    
+    list("nonNA"=non.na.wgii.scores,
+         "total"=wgii.scores)
+  })
+  
+  total.pga <- do.call("rbind", lapply(pga, function(x) x[['total']]))
+  nonNA.pga <- do.call("rbind", lapply(pga, function(x) x[['nonNA']]))
+  total.wgii <- do.call("rbind", lapply(wgii, function(x) x[['total']]))
+  nonNA.wgii <- do.call("rbind", lapply(wgii, function(x) x[['nonNA']]))
+  
   switch(analysis,
-         gf=gf.scores,
-         wgii=wgii.scores,
-         pga_wgii=list("gf"=gf.scores, "wgii"=wgii.scores),
+         gf=list("total"=total.pga, "nonNA"=nonNA.pga),
+         wgii=list("total"=total.wgii, "nonNA"=nonNA.wgii),
+         pga_wgii=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
+                       "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii)),
          stop("analysis incorrectly specified"))
 
 }
