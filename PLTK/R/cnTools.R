@@ -261,19 +261,23 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
     na.idx <- (is.na(each.cn))
     
     gain.idx <- (each.cn > (copy.neutral + cn.variance))
+    amp.idx <- (each.cn > (copy.neutral + 1))
     loss.idx <- (each.cn < (copy.neutral - cn.variance))
     neutral.idx <- (each.cn >= (copy.neutral - cn.variance)) & (each.cn <= (copy.neutral + cn.variance))
     
     total.genome.size <- sum(as.numeric(width(gr)))
     non.na.genome.size <- sum(as.numeric(width(gr[which(!na.idx),])))
     gain.genome.size <- sum(as.numeric(width(gr[which(gain.idx),])))
+    amp.genome.size <- sum(as.numeric(width(gr[which(amp.idx),])))
     loss.genome.size <- sum(as.numeric(width(gr[which(loss.idx),])))
     neutral.genome.size <- sum(as.numeric(width(gr[which(neutral.idx),])))
     matrix(c("total"=total.genome.size,
              "non.na"=non.na.genome.size,
+             "amp"=amp.genome.size,
              "gain"=gain.genome.size,
              "loss"=loss.genome.size,
              "all"=(gain.genome.size + loss.genome.size),
+             "amp.all"=(amp.genome.size + loss.genome.size),
              "neutral"=neutral.genome.size), 
            ncol=1)
   }
@@ -284,13 +288,14 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
     gf.chr <- apply(elementMetadata(gr.chr), 2, function(x) { 
       getGFdata(x, gr.chr)
     })
-    rownames(gf.chr) <- c("total", "non.na", "gain", "loss", "all", "neutral")
+    rownames(gf.chr) <- c("total", "non.na", "amp",  "gain",
+                          "loss", "all", "amp.all", "neutral")
     gf.chr
   })
   names(chr.gf.data) <- as.character(seqnames(gr)@values)
   
   # Goes through all CN data to give back Genomic Fraction or wGII scores
-  cn.row.idx <- sapply(cn.stat, grep, rownames(chr.gf.data[[1]]))
+  cn.row.idx <- sapply(cn.stat, function(x) grep(paste0("^", x, "$"), rownames(chr.gf.data[[1]])))
   total.row.idx <- grep("total", rownames(chr.gf.data[[1]]))
   non.na.row.idx <- grep("non.na", rownames(chr.gf.data[[1]]))
   
@@ -313,11 +318,15 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   wgii <- lapply(cn.row.idx, function(cn.idx){
     wgii.mat <- sapply(chr.gf.data, function(x) x[cn.idx[1],,drop=FALSE] / x[total.row.idx,,drop=FALSE])
     non.na.wgii.mat <- sapply(chr.gf.data, function(x) x[cn.idx,,drop=FALSE] / x[non.na.row.idx,,drop=FALSE])
+    rownames(wgii.mat) <- rownames(non.na.wgii.mat) <- colnames(chr.gf.data[[1]])
+    
     wgii.scores <- apply(wgii.mat, 1, mean, na.rm=TRUE)
     non.na.wgii.scores <- apply(non.na.wgii.mat, 1, mean, na.rm=TRUE)
     names(non.na.wgii.scores) <- names(wgii.scores) <- colnames(chr.gf.data[[1]])
     
-    list("nonNA"=non.na.wgii.scores,
+    list("chrPGA.total"=wgii.mat,
+         "chrPGA.nonNA"=non.na.wgii.mat,
+         "nonNA"=non.na.wgii.scores,
          "total"=wgii.scores)
   })
   
@@ -326,11 +335,18 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   total.wgii <- do.call("rbind", lapply(wgii, function(x) x[['total']]))
   nonNA.wgii <- do.call("rbind", lapply(wgii, function(x) x[['nonNA']]))
   
+  require(abind)
+  total.chrPGA <- abind(lapply(wgii, function(x) x[['chrPGA.total']]), along = 3)
+  nonNA.chrPGA <- abind(lapply(wgii, function(x) x[['chrPGA.nonNA']]), along = 3)
+  
   switch(analysis,
          gf=list("total"=total.pga, "nonNA"=nonNA.pga),
          wgii=list("total"=total.wgii, "nonNA"=nonNA.wgii),
          pga_wgii=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
                        "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii)),
+         all=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
+                  "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii),
+                  "chr.gf"=list("total"=total.chrPGA, "nonNA"=nonNA.chrPGA)),
          stop("analysis incorrectly specified"))
 
 }
@@ -633,13 +649,16 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
 #' @export
 #'
 #' @examples
-cnDist <- function(gr, method="euclidean"){
+cnDist <- function(gr, method="euclidean", seg.w=NA){
   if(class(gr) == "GRanges") egr <- as.matrix(gr@elementMetadata) else egr <- t(gr)
   
   switch(method,
          "mhamming"={
            dist.mat <- apply(egr, 2, function(x){
              mat.x <- abs(matrix(rep(x, ncol(egr)), ncol=ncol(egr)) - egr)
+             #add weights to distances
+             if(is.na(seg.w)) seg.w <- rep(1, nrow(mat.x))
+             mat.x <- t(t(mat.x) %*% diag(seg.w))
              apply(mat.x, 2, sum, na.rm=TRUE)
            })
          },
