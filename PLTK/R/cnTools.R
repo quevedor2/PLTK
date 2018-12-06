@@ -237,6 +237,7 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.va
          pga=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          pga_wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+         all=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
          stop("analysis not recognized")
   )
 }
