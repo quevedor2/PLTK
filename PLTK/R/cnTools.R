@@ -38,6 +38,7 @@ getGenes <- function(genome.build="hg19"){
 #'
 #' @param cn.data [Data.frame]: A dataframe that can be converted to GRanges object easily, or a granges object
 #' @param genes [GRanges]: A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()
+
 #'
 #' @return Annotated GRanges object with gene ids for the input GRanges
 #' @export
@@ -46,7 +47,7 @@ getGenes <- function(genome.build="hg19"){
 #' 
 #' @examples 
 #' annotateSegments(PLTK::genDemoData(), PLTK::getGenes())
-annotateSegments <- function(cn.data, genes){
+annotateSegments.old <- function(cn.data, genes){
   suppressPackageStartupMessages(require(org.Hs.eg.db))
   suppressPackageStartupMessages(require(GenomicRanges))
   suppressPackageStartupMessages(require(AnnotationDbi))
@@ -74,6 +75,62 @@ annotateSegments <- function(cn.data, genes){
 }
 
 #----------------------------------------------------------------------------------------
+#' cnTools: annotate GRanges segments
+#'
+#' @param cn.data [Data.frame]: A dataframe that can be converted to GRanges object easily, or a granges object
+#' @param genes [GRanges]: A GRanges object of genes with gene_ids housing annotation data. Easiest as the output from getGenes()
+#' @param mart [object]: A biomart object if you want to annotate missed genes with ensembl
+#' @param use.mart [boolean]: If no mart is given, it will load in a biomart object
+#'
+#' @return Annotated GRanges object with gene ids for the input GRanges
+#' @export
+#' @import org.Hs.eg.db GenomicRanges
+#' @importFrom AnnotationDbi mapIds
+#' 
+#' @examples 
+#' annotateSegments(PLTK::genDemoData(), PLTK::getGenes())
+annotateSegments <- function(cn.data, genes, mart=NULL, use.mart=FALSE){
+  suppressPackageStartupMessages(require(biomaRt))
+  suppressPackageStartupMessages(require(org.Hs.eg.db))
+  suppressPackageStartupMessages(require(GenomicRanges))
+  suppressPackageStartupMessages(require(AnnotationDbi))
+  if(use.mart & is.null(mart)){
+    mart <- useMart("ENSEMBL_MART_ENSEMBL")
+    mart <- useDataset("hsapiens_gene_ensembl", mart)
+  }
+  
+  
+  gr0 <- makeGRangesFromDataFrame(cn.data,keep.extra.columns=TRUE)
+  seqlevelsStyle(gr0) <- 'UCSC'
+  olaps <- findOverlaps(genes, gr0, type="within")
+  idx <- factor(subjectHits(olaps), levels=seq_len(subjectLength(olaps)))
+  gr0$gene_ids <- splitAsList(genes$gene_id[queryHits(olaps)], idx)
+  gr0$gene_ids <- lapply(gr0$gene_ids, function(input.id) {
+    if(length(input.id) > 0){ 
+      tryCatch({
+        ens <- mapIds(org.Hs.eg.db,
+                      keys=input.id,
+                      column="SYMBOL",
+                      keytype="ENTREZID",
+                      multiVals="first")
+        
+        if(!is.null(mart)){
+          ens[which(is.na(ens))] <- getBM(
+            mart=mart,
+            attributes="external_gene_name",
+            filter="entrezgene",
+            values=names(ens[which(is.na(ens))]),
+            uniqueRows=TRUE)
+        }
+        ens
+      }, error=function(e){NULL})
+    } else { NA }
+  })
+  return(gr0)
+}
+
+
+#----------------------------------------------------------------------------------------
 #' cnTools: Aggregate Genomic Ranges
 #' @description Because different samples have different segmentations, this function attempts to create a unified matrix with the fewest number of segments needed to represent all copy-number segments from all samples.  This allows for the elementMetadata() to store the associate copy-number values for those samples all in one matrix.
 #'
@@ -85,6 +142,7 @@ annotateSegments <- function(cn.data, genes){
 #'
 #' @examples aggregateGr(list(gr1, gr2))
 aggregateGr <- function(list.gr){
+  list.gr <- as.list(list.gr)
   # Loop to combine the first two GRanges object of the list, save it to the first element of the list, pop out the second element
   while(length(list.gr) >= 2){
     x <- list.gr[[1]]
