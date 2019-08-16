@@ -60,7 +60,74 @@ getProteinDat <- function(gene, edb, txid=NULL, domain.src='pfam'){
        "pdomains"=as.data.frame(splsrc.pd[[txid]]))
 }
 
-getProteinDat("MTOR", EnsDb.Hsapiens.v86)
+
+#' Title
+#'
+#' @param ids 
+#' @param col.set 
+#'
+#' @return
+#'
+#' @examples 
+.mapColors <- function(ids, col.set='Set1'){
+  require(RColorBrewer)
+  cols <- setNames(brewer.pal(length(ids), col.set), ids)
+  cols
+}
+
+#' plotProteinStructure
+#' @description Plots the top protein structure data track
+#'
+#' @param pdat Output list data structure from getProteinDat()
+#' @param cex.val CEX value for the writing
+#' @param st.range Start amino acid index for region of interest
+#' @param end.range End amino acid index for region of interest
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' pdf("~/Desktop/test2.pdf", width=15)
+#' split.screen(c(3,1))
+#' screen(1)
+#' plotProteinStructure(pdat)
+#' close.screen(all.screens=TRUE)
+plotProteinStructure <- function(pdat, st.range, end.range, cex.val=0.7){
+  seqlen <- nchar(pdat$seq)
+
+  cols <- .mapColors(unique(pdat$pdomains$domain))
+  pdat$pdomains$cols <- cols[pdat$pdomains$domain]
+  
+  aa.idx <- seq(0, 5000, by=500)[-1]
+  aa.idx <- c(1, aa.idx[aa.idx < seqlen], seqlen)
+  
+  # Plot the base structure of the protein
+  par(xpd=FALSE)
+  plot(0, type='n', axes=FALSE, xlab='', ylab='', xaxt='n', yaxt='n',
+       xlim=c(1, seqlen), ylim=c(0.2,1), main=unique(pdat$pdomains$gene_name))
+  rect(xleft = 1, ybottom = 0, xright = seqlen, ytop = 1, col='grey')
+  axis(side=1, at = aa.idx, cex.axis=cex.val)
+  
+  # Add rectangles for each pfam domain
+  apply(pdat$pdomains, 1, function(dom){
+    st <- as.integer(dom['prot_dom_start'])
+    end <- as.integer(dom['prot_dom_end'])
+    mid <- st + ((end - st)/2)
+      
+    rect(xleft=st, ybottom=0, xright=end, ytop=1, 
+         col=dom['cols'], border=NA)
+    axis(side = 3, at = mid, labels = dom['domain'], 
+         line = NA, tick = FALSE, cex.axis=cex.val)
+  })
+  
+  ## Add regions outside of margins
+  par(xpd=TRUE)
+  text(x=-1 * (seqlen*0.01), y=0.015, "Amino acid #", pos = 2, cex=cex.val)
+  segments(x0 = st.range,y0 = 0.17,x1 = st.range,y1 = -100)
+  segments(x0 = end.range,y0 = 0.17,x1 = end.range,y1 = -100)
+  par(xpd=FALSE)
+}
+
 
 
 
