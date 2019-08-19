@@ -58,10 +58,15 @@ getProteinDat <- function(gene, edb, txid=NULL,
   if(is.null(txid) & !default.longest){
     txid <- 1
   } else if (default.longest){
-    txlen <- lengthOf(edb, of = "tx", filter = TxIdFilter(names(splsrc.pd)))
-    enst.idx <- grep("ENST", names(txlen))
-    txlen <- txlen[enst.idx]
-    txid <- names(which.max(txlen[enst.idx]))
+    #txlen <- lengthOf(edb, of = "tx", filter = TxIdFilter(names(splsrc.pd)))
+    CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(names(splsrc.pd)),
+                            columns = c("tx_biotype", "gene_name"))
+    CDS.len <- sapply(split(CDS, f=names(CDS)), function(i) as.integer(sum(width(i))))
+    
+    
+    enst.idx <- grep("ENST", names(CDS.len))
+    CDS.len <- CDS.len[enst.idx]
+    txid <- names(which.max(CDS.len[enst.idx]))
   }
   
   pid <- unique(splsrc.pd[[txid]]$protein_id)
