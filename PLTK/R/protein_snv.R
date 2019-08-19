@@ -28,12 +28,14 @@
 #' @param edb Ensembl DB R package, v86=GRCh38, v75=GRCh37 (Default: EnsDb.Hsapiens.v86)
 #' @param txid Primary transcript ID analyzing. Returns first TXID if none provided (Default: NULL)
 #' @param domain.src Protein feature databse, only pfam supported at this time (Default: pfam)
+#' @param default.longest Selects the longest ENST txid as the canonical txid (Default: TRUE)
 #'
 #' @return
 #' @export
 #'
 #' @examples getProteinDat("MTOR", EnsDb.Hsapiens.v86)
-getProteinDat <- function(gene, edb, txid=NULL, domain.src='pfam'){
+getProteinDat <- function(gene, edb, txid=NULL, 
+                          domain.src='pfam', default.longest=TRUE){
   require(ensembldb)
   require(EnsDb.Hsapiens.v86)
   require(EnsDb.Hsapiens.v75)
@@ -42,6 +44,7 @@ getProteinDat <- function(gene, edb, txid=NULL, domain.src='pfam'){
                  columns = c("tx_id", "protein_id", "protein_domain_source", 
                              "protein_domain_id", "prot_dom_start", "prot_dom_end"),
                  return.type = "AAStringSet")
+  transcripts(edb, filter = GeneNameFilter(gene))
   mpd <- mcols(pd) 
   spl.pd <- split(mpd, mpd$tx_id)
   
@@ -52,7 +55,15 @@ getProteinDat <- function(gene, edb, txid=NULL, domain.src='pfam'){
     return(pd.src)
   }, domain.src)
   
-  if(is.null(txid)) txid <- 1
+  if(is.null(txid) & !default.longest){
+    txid <- 1
+  } else if (default.longest){
+    txlen <- lengthOf(edb, of = "tx", filter = TxIdFilter(names(splsrc.pd)))
+    enst.idx <- grep("ENST", names(txlen))
+    txlen <- txlen[enst.idx]
+    txid <- names(which.max(txlen[enst.idx]))
+  }
+  
   pid <- unique(splsrc.pd[[txid]]$protein_id)
   seq <- as.vector(unique(pd[which(names(pd) == pid),]))
   
