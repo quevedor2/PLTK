@@ -77,6 +77,64 @@ getProteinDat <- function(gene, edb, txid=NULL,
 }
 
 
+#' chooseTranscript
+#' @description Select a single transcript using a gene name or mutation locus selection method
+#' 
+#' @param edb Ensembl DB R package, v86=GRCh38, v75=GRCh37 (Default: EnsDb.Hsapiens.v86)
+#' @param gene Gene of interest in HUGO format (e.g., MTOR). If present, Locus infomation is not required.
+#' @param Chromosome Chromosome
+#' @param Start_Position Mutation start position
+#' @param End_Position Mutation end position
+#' @param default.longest Selects the longest ENST txid as the canonical txid (Default: TRUE)
+#'
+#' @return
+#' @export
+#'
+#' @examples chooseTranscript("MTOR")
+chooseTranscript <- function(edb, gene, Chromosome, Start_Position, End_Position,
+                             default.longest = TRUE){
+  require(ensembldb)
+  require(EnsDb.Hsapiens.v86)
+  require(EnsDb.Hsapiens.v75)
+  
+  seqlevelsStyle(edb) <- "UCSC"
+  
+  if(!is.null(gene)){
+    trans <- transcripts(edb, GeneNameFilter(gene),
+                            columns = c("tx_biotype", "gene_name"))
+  }else{
+    
+    Chromosome <- as.character(Chromosome)
+    Start_Position <- as.numeric(as.character(Start_Position))
+    End_Position <- as.numeric(as.character(End_Position))
+    
+    mutrange <-  GRanges(Chromosome, IRanges(start=Start_Position, end=End_Position))
+    
+    trans <- transcriptsByOverlaps(edb, mutrange, type = "any")
+  }
+  
+    trans_vec <- trans@elementMetadata@listData[["tx_id"]]
+    
+    CDS.len <- sapply(trans@elementMetadata@listData[["tx_id"]], 
+                      function(i) {
+                        CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(t),
+                                    columns = c("tx_biotype", "gene_name"))
+                        sum(CDS@unlistData@ranges@width)})
+    
+    if(!default.longest){
+      txid <- trans_vec[1]
+    } else {
+
+      CDS.len <- sapply(split(CDS, f=names(CDS)), function(i) as.integer(sum(width(i))))
+      
+      enst.idx <- grep("ENST", names(CDS.len))
+      CDS.len <- CDS.len[enst.idx]
+      txid <- names(which.max(CDS.len[enst.idx]))
+    }
+  }
+  return(txid)
+}
+
 #' Title
 #'
 #' @param ids 
