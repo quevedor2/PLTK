@@ -90,7 +90,7 @@ getProteinDat <- function(gene, edb, txid=NULL,
 #' @return
 #' @export
 #'
-#' @examples chooseTranscript("MTOR")
+#' @examples chooseTranscript(EnsDb.Hsapiens.v86,"MTOR")
 chooseTranscript <- function(edb, gene, Chromosome, Start_Position, End_Position,
                              default.longest = TRUE){
   require(ensembldb)
@@ -202,6 +202,115 @@ plotProteinStructure <- function(pdat, st.range, end.range, cex.val=0.7){
   par(xpd=FALSE)
 }
 
+
+#' getCdsDat
+#' @description For a given transcript, return the coding sequence
+#' 
+#' @param txid Transcript ID in Ensembl format
+#' @param edb Ensembl DB R package, v86=GRCh38, v75=GRCh37 (Default: EnsDb.Hsapiens.v86)
+#' @param gdb genome sequence database (Default: BSgenome.Hsapiens.UCSC.hg38)
+#' 
+#' @return
+#' @export
+#'
+#' @examples getCdsDat("ENST00000471181", EnsDb.Hsapiens.v86, BSgenome.Hsapiens.UCSC.hg38)
+getCdsDat <- function(txid, edb, gdb){
+  require(ensembldb)
+  require(EnsDb.Hsapiens.v86)
+  require(EnsDb.Hsapiens.v75)
+  require(BSgenome.Hsapiens.UCSC.hg38)
+  require(BSgenome.Hsapiens.UCSC.hg19)
+
+  
+  CDS.frame <- as.data.frame(ensembldb::cdsBy(edb, by="tx", TxIdFilter(txid),
+                            columns = c("tx_biotype", "gene_name")))
+  
+
+  CDS.frame$Reference_Sequence <- sapply(row.names(CDS.frame), function(i){
+    gr <-  GRanges(as.character(CDS.frame[i,"seqnames"]), 
+                   IRanges(start=as.numeric(CDS.frame[i,"start"]), 
+                           end=as.numeric(CDS.frame[i,"end"])))
+    as.character(getSeq(gdb, gr))})
+  
+  
+  cds_start <- min(c(CDS.frame$start,CDS.frame$end))
+  cds_end <- max(c(CDS.frame$start,CDS.frame$end))
+  
+  Indexed_Seq <- vector(mode = "character",
+                        length = cds_end-cds_start+1)
+  
+  if(all(CDS.frame$strand=="-")){
+  
+    CDS.frame$Reference_Sequence <- sapply(CDS.frame$Reference_Sequence,
+                                           function(i){
+                                             as.character(reverseComplement(DNAString(i)))
+                                           }
+                                     )
+  
+  for (i in 1:nrow(CDS.frame)){
+      Indexed_Seq[c(1+cds_end - as.numeric(CDS.frame[i,"end"]):
+                    as.numeric(CDS.frame[i,"start"]))] <- 
+      reverse(unlist(strsplit(CDS.frame[i,"Reference_Sequence"],"")))
+      names(Indexed_Seq) <- cds_end:cds_start
+  }
+  }else{
+    for (i in 1:nrow(CDS.frame)){
+      Indexed_Seq[c(as.numeric(CDS.frame[i,"start"]):
+                      as.numeric(CDS.frame[i,"end"])-cds_start+1)] <- 
+        unlist(strsplit(CDS.frame[i,"Reference_Sequence"],""))
+    }
+    names(Indexed_Seq) <- cds_start:cds_end
+  }
+  
+  AA_seq <- translate(DNAString(paste(CDS.frame$Reference_Sequence,collapse="")))
+  
+  return(list(cds = CDS.frame,
+              Indexed_Seq = Indexed_Seq,
+              AA_seq = AA_seq))
+}
+  
+#' mutateCds
+#' @description Given a CDS data frame and a mutation, return the Amino-Acid
+#' sequence, aligned to the WT sequence
+#' 
+#' @param Indexed_Seq An Indexed and named vector of CDS sequences
+#' Indeces are relative to transcription start, names are according to genomic
+#' position.
+#' @param Chromosome Chromosome
+#' @param Start_Position Mutation start position
+#' @param End_Position Mutation end position
+#' @param Variant_Type Variant type, options: c("SNP","INS","DEL")
+#' @param Alt_Allele Alternate allele to be added
+#'
+#' @return
+#' @export
+#'
+#' @examples mutateCds("ENST00000471181", EnsDb.Hsapiens.v86, BSgenome.Hsapiens.UCSC.hg38)
+mutateCds <- function(Indexed_Seq, Start_Position, End_Position, 
+                      Variant_Type, Alt_Allele){
+  
+  mut_Indexed_Seq <- Indexed_Seq
+  
+  if(Variant_Type == "SNP")
+  {
+    mut_Indexed_Seq[as.character(Start_Position)] <- Alt_Allele
+  }else if(Variant_Type == "DEL")
+  {
+    mut_Indexed_Seq[as.character(Start_Position:End_Position)] <- "-"
+  }else if(Variant_Type == "INS")
+  {
+    ins_ind <- which(names(mut_Indexed_Seq)==as.character(Start_Position))
+    mut_Indexed_Seq <- c(mut_Indexed_Seq[1:ins_ind], 
+                     strsplit(Alt_Allele,""),
+                     mut_Indexed_Seq[End_Position:length(mut_Indexed_Seq)])
+  }
+  
+  AA.Seq <- translate(DNAString(paste0(mut_Indexed_Seq[mut_Indexed_Seq!="" & 
+                                   mut_Indexed_Seq!="-"],collapse="")))
+  
+  return(list(Indexed_Seq = mut_Indexed_Seq,
+              AA_seq = AA_seq))
+}
 
 
 
