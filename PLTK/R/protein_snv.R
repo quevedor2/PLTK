@@ -115,7 +115,7 @@ getProteinDat <- function(gene, edb, bsg, txid=NULL,
 #' plotProteinStructure(pdat)
 #' close.screen(all.screens=TRUE)
 plotProteinStructure <- function(pdat, st.range, end.range, cex.val=0.7){
-  seqlen <- nchar(pdat$seq)
+  seqlen <- nchar(pdat$aa)
 
   cols <- .mapColors(unique(pdat$pdomains$domain))
   pdat$pdomains$cols <- cols[pdat$pdomains$domain]
@@ -148,6 +148,8 @@ plotProteinStructure <- function(pdat, st.range, end.range, cex.val=0.7){
   segments(x0 = st.range,y0 = 0.17,x1 = st.range,y1 = -100)
   segments(x0 = end.range,y0 = 0.17,x1 = end.range,y1 = -100)
   par(xpd=FALSE)
+  
+  list("xlim"=c(1, seqlen), "st"=st.range, "end"=end.range)
 }
 
 
