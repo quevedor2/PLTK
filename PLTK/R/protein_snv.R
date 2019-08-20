@@ -33,12 +33,14 @@
 #' @return
 #' @export
 #'
-#' @examples getProteinDat("MTOR", EnsDb.Hsapiens.v86)
-getProteinDat <- function(gene, edb, txid=NULL, 
+#' @examples getProteinDat("MTOR", EnsDb.Hsapiens.v86, BSgenome.Hsapiens.NCBI.GRCh38)
+getProteinDat <- function(gene, edb, bsg, txid=NULL, 
                           domain.src='pfam', default.longest=TRUE){
   require(ensembldb)
   require(EnsDb.Hsapiens.v86)
   require(EnsDb.Hsapiens.v75)
+  require(BSgenome.Hsapiens.NCBI.GRCh38)
+  require(BSgenome.Hsapiens.UCSC.hg19)
   
   pd <- proteins(edb, filter = GeneNameFilter(gene),
                  columns = c("tx_id", "protein_id", "protein_domain_source", 
@@ -48,6 +50,7 @@ getProteinDat <- function(gene, edb, txid=NULL,
   mpd <- mcols(pd) 
   spl.pd <- split(mpd, mpd$tx_id)
   
+  # Gets the protein domains for each isoform
   splsrc.pd <- lapply(spl.pd, function(pd0, ...) {
     pd.src <- split(pd0, pd0$protein_domain_source)[[domain.src]]
     domain <-.getDomainBimap(...)[pd.src$protein_domain_id]
@@ -55,27 +58,30 @@ getProteinDat <- function(gene, edb, txid=NULL,
     return(pd.src)
   }, domain.src)
   
+  # Retrieves the CDS sequence for each isoform
+  CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(names(splsrc.pd)),
+                          columns = c("tx_biotype", "gene_name"))
+  CDS_seqs <- extractTranscriptSeqs(bsg, CDS)
+  
   if(is.null(txid) & !default.longest){
     txid <- 1
-  } else if (default.longest){
-    #txlen <- lengthOf(edb, of = "tx", filter = TxIdFilter(names(splsrc.pd)))
-    CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(names(splsrc.pd)),
-                            columns = c("tx_biotype", "gene_name"))
+  } else if (is.null(txid) & default.longest){
     CDS.len <- sapply(split(CDS, f=names(CDS)), function(i) as.integer(sum(width(i))))
-    
-    
     enst.idx <- grep("ENST", names(CDS.len))
     CDS.len <- CDS.len[enst.idx]
     txid <- names(which.max(CDS.len[enst.idx]))
   }
   
-  pid <- unique(splsrc.pd[[txid]]$protein_id)
-  seq <- as.vector(unique(pd[which(names(pd) == pid),]))
   
-  list("seq"=seq,
+  
+  pid <- unique(splsrc.pd[[txid]]$protein_id)
+  aa <- as.vector(unique(pd[which(names(pd) == pid),]))
+  cds <- as.vector(CDS_seqs[txid])
+  
+  list("aa"=aa,
+       'cds'=as.vector(cds),
        "pdomains"=as.data.frame(splsrc.pd[[txid]]))
 }
-
 
 #' Title
 #'
@@ -143,7 +149,6 @@ plotProteinStructure <- function(pdat, st.range, end.range, cex.val=0.7){
   segments(x0 = end.range,y0 = 0.17,x1 = end.range,y1 = -100)
   par(xpd=FALSE)
 }
-
 
 
 
