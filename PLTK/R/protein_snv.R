@@ -107,7 +107,7 @@ chooseTranscript <- function(edb, gene, Chromosome, Start_Position, End_Position
   
   if(!is.null(gene)){
     trans <- transcripts(edb, GeneNameFilter(gene),
-                            columns = c("tx_biotype", "gene_name"))
+                         columns = c("tx_biotype", "gene_name"))
   }else{
     
     Chromosome <- as.character(Chromosome)
@@ -119,26 +119,26 @@ chooseTranscript <- function(edb, gene, Chromosome, Start_Position, End_Position
     trans <- transcriptsByOverlaps(edb, mutrange, type = "any")
   }
   
-    trans_vec <- trans@elementMetadata@listData[["tx_id"]]
+  trans_vec <- trans@elementMetadata@listData[["tx_id"]]
+  
+  CDS.len <- sapply(trans@elementMetadata@listData[["tx_id"]], 
+                    function(i) {
+                      CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(t),
+                                              columns = c("tx_biotype", "gene_name"))
+                      sum(CDS@unlistData@ranges@width)})
+  
+  if(!default.longest){
+    txid <- trans_vec[1]
+  } else {
     
-    CDS.len <- sapply(trans@elementMetadata@listData[["tx_id"]], 
-                      function(i) {
-                        CDS <- ensembldb::cdsBy(edb, by="tx", TxIdFilter(t),
-                                    columns = c("tx_biotype", "gene_name"))
-                        sum(CDS@unlistData@ranges@width)})
+    CDS.len <- sapply(split(CDS, f=names(CDS)), function(i) as.integer(sum(width(i))))
     
-    if(!default.longest){
-      txid <- trans_vec[1]
-    } else {
-
-      CDS.len <- sapply(split(CDS, f=names(CDS)), function(i) as.integer(sum(width(i))))
-      
-      enst.idx <- grep("ENST", names(CDS.len))
-      CDS.len <- CDS.len[enst.idx]
-      txid <- names(which.max(CDS.len[enst.idx]))
-    }
+    enst.idx <- grep("ENST", names(CDS.len))
+    CDS.len <- CDS.len[enst.idx]
+    txid <- names(which.max(CDS.len[enst.idx]))
   }
-  return(txid)
+
+return(txid)
 }
 
 #' Title
