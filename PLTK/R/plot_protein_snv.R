@@ -24,8 +24,18 @@ mutSeq <- function(mut, pd){
   seq <- strsplit(pd$cds, '')[[1]]
   seq.mat <- apply(mut, 1, function(m){
     switch(m['Variant_Type'],
-           DEL=.hgsv_del(seq, m['HGVSc']))
+           DEL=.hgsv_del(seq, m['HGVSc']),
+           INS=.hgvs_ins(seq, m['HGVSc']),
+           SNP=.hgvs_snv(seq, m['HGVSc']))
   })
+  
+  # check for failures
+  null.idx <- sapply(seq.mat, is.null)
+  if(any(null.idx)){
+    error.hgvs <- paste(mut[which(null.idx), 'HGVSc'], collapse=", ")
+    warning(paste0("Could not handle the following mutations: ", error.hgvs))
+    seq.mat <- do.call(cbind, seq.mat[-which(null.idx)])
+  }
   
   seq.mat <- cbind(seq, seq.mat)
   seq.mat <- .aggregate_seq(seq.mat)
@@ -50,7 +60,8 @@ mutSeq <- function(mut, pd){
   cbind(seq.mat, seq.agg)
 }
 
-.hgsv_del <- function(seq, hgvs){
+.hgvs_del <- function(seq, hgvs){
+  # hgvs <- "c.3008_3009del"
   pos <- gsub("^c.", "", hgvs) %>% gsub("[a-zA-Z]*$", "", .)
   pos <- strsplit(pos, split="_")[[1]]
   if(length(pos) > 1){
@@ -61,6 +72,48 @@ mutSeq <- function(mut, pd){
   seq
 }
 
+.hgvs_ins <- function(seq, hgvs){
+  # hgvs <- 'c.1982_1983insCT'
+  # hgvs <- 'c.2560_2561dup'
+  # hgvs <- 'c.2560dup'
+  if(grepl("dup", hgvs)){
+    pos <- gsub("^c.", "", hgvs) %>% gsub("dup$", "", .)  %>% strsplit(split="_")
+    pos <- as.integer(pos[[1]])
+    ins <- paste(seq[pos], collapse="")
+    pos <- pos[2]
+  } else if(grepl("ins", hgvs)) {
+    pos <- gsub("^c.", "", hgvs) %>% gsub("ins.*$", "", .)  %>% strsplit(split="_")
+    pos <- as.integer(pos[[1]])
+    ins <- gsub("^c.[0-9_]*ins", "", hgvs) 
+  }
+  seq[pos[1]] <- paste0(seq[pos[1]], ins)
+  
+  seq
+}
+
+.hgvs_snv <- function(seq, hgvs){
+  # hgvs <- "c.355G>A"
+  # hgvs <- 'c.5137+1G>T'
+  if(grepl("\\+", hgvs)){
+    # Handle splice variants, not implemented yet
+    pos <- 1
+    ref <- 'X'
+    alt <- 'Y'
+  } else{
+    pos <- as.integer(gsub("^c.", "", hgvs) %>% gsub("[^0-9]*$", "", .))
+    ref <- gsub("^c.[0-9]*", "", hgvs) %>% gsub(">[a-zA-Z]*$", "", ., perl=TRUE)
+    alt <- gsub("^c.[0-9]+[a-zA-Z]*>", "", hgvs) 
+  }
+  
+  
+  if(seq[pos] == toupper(ref)) {
+    seq[pos] <- toupper(alt) 
+  } else {
+    warning(paste0(hgvs, ": Reference allele did not match reference sequence allele"))
+    seq <- NULL
+  }
+  seq
+}
 
 
 plotMuts <- function(mut.mat, cdna.range, prot.coords){
