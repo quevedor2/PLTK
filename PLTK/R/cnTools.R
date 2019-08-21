@@ -99,8 +99,11 @@ annotateSegments <- function(cn.data, genes, mart=NULL, use.mart=FALSE){
     mart <- useDataset("hsapiens_gene_ensembl", mart)
   }
   
-  
-  gr0 <- makeGRangesFromDataFrame(cn.data,keep.extra.columns=TRUE)
+  if(class(cn.data) == 'GRanges') {
+    gr0 <- cn.data
+  } else {
+    gr0 <- makeGRangesFromDataFrame(cn.data,keep.extra.columns=TRUE)
+  }
   seqlevelsStyle(gr0) <- 'UCSC'
   olaps <- findOverlaps(genes, gr0, type="within")
   idx <- factor(subjectHits(olaps), levels=seq_len(subjectLength(olaps)))
