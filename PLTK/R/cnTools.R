@@ -4,27 +4,18 @@
 #'
 #' @return A Granges object containing strand-specific genes with EntrezIDs
 #' @export
-#' @import TxDb.Hsapiens.UCSC.hg19.knownGene GenomicRanges
+#' @import TxDb.Hsapiens.UCSC.hg19.knownGene 
+#' TxDb.Hsapiens.UCSC.hg38.knownGene
+#' TxDb.Hsapiens.UCSC.hg18.knownGene 
+#' GenomicRanges
 #' 
 #' @examples getGenes()
 getGenes <- function(genome.build="hg19"){
     switch(genome.build,
-         hg18={
-           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg18.knownGene))
-           if(!exists("TxDb.Hsapiens.UCSC.hg18.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg18.knownGene")
-           package <- TxDb.Hsapiens.UCSC.hg18.knownGene
-         },
-         hg19={
-           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg19.knownGene))
-           if(!exists("TxDb.Hsapiens.UCSC.hg19.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg19.knownGene")
-           package <- TxDb.Hsapiens.UCSC.hg19.knownGene
-           },
-         hg38={
-           suppressPackageStartupMessages(require(TxDb.Hsapiens.UCSC.hg38.knownGene))
-           if(!exists("TxDb.Hsapiens.UCSC.hg38.knownGene")) stop("Requires TxDb.Hsapiens.UCSC.hg38.knownGene")
-           package <- TxDb.Hsapiens.UCSC.hg38.knownGene
-           },
-         stop("genome must be 'hg19' or 'hg38'"))
+         hg18={ package <- TxDb.Hsapiens.UCSC.hg18.knownGene },
+         hg19={ package <- TxDb.Hsapiens.UCSC.hg19.knownGene },
+         hg38={ package <- TxDb.Hsapiens.UCSC.hg38.knownGene },
+         stop("genome must be hg18, hg19, or hg38"))
   
   genes0 <- genes(package)
   idx <- rep(seq_along(genes0), elementNROWS(genes0$gene_id))
@@ -43,9 +34,9 @@ getGenes <- function(genome.build="hg19"){
 #' @return Annotated GRanges object with gene ids for the input GRanges
 #' @export
 #' @import org.Hs.eg.db GenomicRanges
-#' @importFrom AnnotationDbi mapIds
+#' @importFrom AnnotationDbi mapIds 
 #' 
-#' @examples 
+#' @examples
 #' annotateSegments(PLTK::genDemoData(), PLTK::getGenes())
 annotateSegments.old <- function(cn.data, genes){
   suppressPackageStartupMessages(require(org.Hs.eg.db))
@@ -186,13 +177,12 @@ aggregateGr <- function(list.gr){
 #' @return A Granges object with one column in the element Metadata() corresponding to the sample
 #' @import GenomicRanges
 #'
-#' @examples
 segfileToGr <- function(seg, col.id='SampleX', seg.id='seg.mean'){
   suppressPackageStartupMessages(require(GenomicRanges))
   gr.tmp <- makeGRangesFromDataFrame(seg, keep.extra.columns=FALSE)
   elementMetadata(gr.tmp)$seg.mean <- as.numeric(seg[,seg.id])
   colnames(elementMetadata(gr.tmp)) <- col.id
-  gr.tmp
+  return(gr.tmp)
 }
 
 #----------------------------------------------------------------------------------------
@@ -205,7 +195,6 @@ segfileToGr <- function(seg, col.id='SampleX', seg.id='seg.mean'){
 #'
 #' @return
 #'
-#' @examples
 assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
   seg.gr.meta <- apply(elementMetadata(seg.gr), 2, function(x){
     del <- (-1 * cn.thresh) + cn.scale
@@ -219,7 +208,7 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
     x
   })
   elementMetadata(seg.gr) <- as.data.frame(seg.gr.meta)
-  seg.gr
+  return(seg.gr)
 }
   
 #----------------------------------------------------------------------------------------
@@ -233,7 +222,6 @@ assignAmpDel <- function(seg.gr, cn.thresh=0.5, cn.scale=0){
 #' @import GenomicRanges QDNAseq
 #' @export
 #'
-#' @examples
 convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
   if(class(cnsegs) == 'QDNAseqCopyNumbers'){
     suppressPackageStartupMessages(require(QDNAseq))
@@ -274,7 +262,7 @@ convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
   seq.ids <- gsub("chr24", "chrY", gsub("chr23", "chrX", seqlevels(gr)))
   gr <- renameSeqlevels(gr,seq.ids)
   colnames(gr@elementMetadata) <- gsub("^X([0-9])", "\\1", colnames(gr@elementMetadata))
-  gr
+  return(gr)
 }
 
 #----------------------------------------------------------------------------------------
@@ -288,19 +276,18 @@ convertToGr <- function(cnsegs, type='Unknown', assign.integer=FALSE, ...){
 #' @param analysis [Character]:  The analysis to perform: "pga" percent genome altered, "wgii" for wGII scores (genomic fraction normalized for chromosome), "pga.wgii" for both,
 #' @param ... 
 #'
-#' @return
+#' @return null
 #' @export
-#'
-#' @examples
 cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.variance=0){
   #if(!validateGr(gr)) stop("Copy-number GRanges object failed validation checks.")
-  switch(analysis,
-         pga=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
-         wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
-         pga_wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
-         all=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
-         stop("analysis not recognized")
+  ret <- switch(analysis,
+                pga=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+                wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+                pga_wgii=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+                all=PLTK:::cnGenomeFraction(analysis, gr, cn.stat, copy.neutral, cn.variance),
+                stop("analysis not recognized")
   )
+  return(ret)
 }
 
 #----------------------------------------------------------------------------------------
@@ -314,9 +301,8 @@ cnMetrics <- function(analysis=NA, gr=NULL, cn.stat='all', copy.neutral=0, cn.va
 #' @param copy.neutral 
 #' @param cn.variance 
 #'
-#' @return
+#' @return NULL
 #'
-#' @examples
 cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.variance){
   # Gets copy-number breakdown of genome in basepairs (gains, losses, NA, etc)
   getGFdata <- function(each.cn, gr, ...){
@@ -401,15 +387,16 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
   total.chrPGA <- abind(lapply(wgii, function(x) x[['chrPGA.total']]), along = 3)
   nonNA.chrPGA <- abind(lapply(wgii, function(x) x[['chrPGA.nonNA']]), along = 3)
   
-  switch(analysis,
-         gf=list("total"=total.pga, "nonNA"=nonNA.pga),
-         wgii=list("total"=total.wgii, "nonNA"=nonNA.wgii),
-         pga_wgii=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
-                       "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii)),
-         all=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
-                  "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii),
-                  "chr.gf"=list("total"=total.chrPGA, "nonNA"=nonNA.chrPGA)),
-         stop("analysis incorrectly specified"))
+  ret <- switch(analysis,
+                gf=list("total"=total.pga, "nonNA"=nonNA.pga),
+                wgii=list("total"=total.wgii, "nonNA"=nonNA.wgii),
+                pga_wgii=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
+                              "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii)),
+                all=list("gf"=list("total"=total.pga, "nonNA"=nonNA.pga),
+                         "wgii"=list("total"=total.wgii, "nonNA"=nonNA.wgii),
+                         "chr.gf"=list("total"=total.chrPGA, "nonNA"=nonNA.chrPGA)),
+                stop("analysis incorrectly specified"))
+  return(ret)
 
 }
 
@@ -421,10 +408,9 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
 #' @param sample.idx [Integer]: the sample index in the metadata
 #' @param na.rm [Boolean]: Remove NA or keep NAs in the reduction
 #'
-#' @return
+#' @return NULL
 #' @export
 #'
-#' @examples
 collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE){
   if(sample.idx > ncol(elementMetadata(gr))) stop("Please specify the index of a sample in elementMetadata()")
   if(is.null(sample.idx)) stop("Cannot collapse GRanges without the index of your sample in elementMetadta()")
@@ -489,7 +475,7 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE
     
     reduce.gr
   })
-  Reduce(c, reduce.list)
+  return(Reduce(c, reduce.list))
 }
 
 #----------------------------------------------------------------------------------------
@@ -503,7 +489,6 @@ collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE
 #' @return The same Target GRanges object with elementMetadata() filled in
 #' @export
 #'
-#' @examples
 mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
   # Initial set-ups
   n <- ncol(elementMetadata(gr))
@@ -602,7 +587,7 @@ mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
     adj.cn.mat[ref.idx,] <<-  adj.cn
   })
   elementMetadata(ref.gr) <- adj.cn.mat
-  ref.gr
+  return(ref.gr)
 }
 
 #----------------------------------------------------------------------------------------
@@ -619,7 +604,6 @@ mapGrToReference <- function(gr, ref.gr, overlap='mode', mode.type='normal'){
 #' @export
 #' @import intervals
 #'
-#' @examples
 overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"), 
                                  chr_id='chr', overlap){
   gr.chrs <- as.character(seqnames(sort(ref.gr))@values)
@@ -675,7 +659,7 @@ overlapGrToReference <- function(gr, ref.gr,  int_ids=c("start", "end"),
   }
   
   
-  Reduce(c, all.ref.gr.chr)
+  return(Reduce(c, all.ref.gr.chr))
   
 }
 
@@ -698,7 +682,7 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
                       "end"=end(gr),
                       "strand"=strand(gr))
   gr.df <- cbind(gr.df, as.data.frame(elementMetadata(gr)))
-  as.data.frame(gr.df)
+  return(as.data.frame(gr.df))
 }
 
 #----------------------------------------------------------------------------------------
@@ -707,10 +691,9 @@ getGrCoords <- function(gr, keep.extra.columns=FALSE){
 #' @param gr GRanges object
 #' @param method 'euclidean', 'mhamming'=modified hamming, 'pearson'
 #'
-#' @return
+#' @return NULL
 #' @export
 #'
-#' @examples
 cnDist <- function(gr, method="euclidean", seg.w=NA){
   if(class(gr) == "GRanges") egr <- as.matrix(gr@elementMetadata) else egr <- t(gr)
   
@@ -730,7 +713,7 @@ cnDist <- function(gr, method="euclidean", seg.w=NA){
          },
          stop("Please provide a valid distance metric: 'euclidean', 'pearson', 'mhamming'")
          )
-  dist.mat
+  return(dist.mat)
 }
 
 #' Cleans the segfile based on the type of input. "Cleaning" will depend on data.type
@@ -738,10 +721,9 @@ cnDist <- function(gr, method="euclidean", seg.w=NA){
 #' @param seg A segfile read in as a dataframe
 #' @param data.type [default='ichor']
 #'
-#' @return
+#' @return NULL
 #' @export
 #'
-#' @examples
 cleanSeg <- function(seg, data.type='ichor'){
   if(data.type == 'ichor'){
     cn.map <- list('AMP'=4, 'GAIN'=3, 'HETD'=1, 'HLAMP'=5, 'NEUT'=2,
@@ -796,5 +778,5 @@ cleanSeg <- function(seg, data.type='ichor'){
   } else {
     stop("Unrecognized data.type")
   }
-  seg
+  return(seg)
 }
