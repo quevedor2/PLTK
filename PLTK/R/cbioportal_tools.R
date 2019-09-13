@@ -13,7 +13,8 @@
 #'
 #' @return Plots a heatmap or bubble-heatmap plot for the given ME matrix
 #' @importFrom gplots heatmap.2
-#' ggplot2 ggplot
+#' @importFrom ggplot2 ggplot aes geom_point scale_colour_gradient2 
+#' scale_size theme theme_bw element_blank
 #' @export
 #'
 #' @examples
