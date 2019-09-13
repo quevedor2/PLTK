@@ -4,7 +4,7 @@
 \alias{cnDist}
 \title{cnTools: Calculate distances between CN-profiles}
 \usage{
-cnDist(gr, method = "euclidean")
+cnDist(gr, method = "euclidean", seg.w = NA)
 }
 \arguments{
 \item{gr}{GRanges object}

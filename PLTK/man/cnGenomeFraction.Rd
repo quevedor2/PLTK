@@ -4,7 +4,8 @@
 \alias{cnGenomeFraction}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-cnGenomeFraction(analysis, gr, cn.stat = "all", copy.neutral, cn.variance)
+cnGenomeFraction(analysis, gr, cn.stat = "all", copy.neutral,
+  cn.variance)
 }
 \arguments{
 \item{analysis}{}
@@ -15,10 +16,9 @@ cnGenomeFraction(analysis, gr, cn.stat = "all", copy.neutral, cn.variance)
 
 \item{copy.neutral}{}
 
-\item{...}{analysis, gr pass in from cnMetrics}
-}
-\value{
+\item{cn.variance}{}
 
+\item{...}{analysis, gr pass in from cnMetrics}
 }
 \description{
 Calculates Genomic Fraction or wGII scores. Refer to cnMetrics for more detail.

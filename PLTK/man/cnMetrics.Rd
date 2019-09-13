@@ -4,8 +4,8 @@
 \alias{cnMetrics}
 \title{cnTools: Wrapper for copy-number metrics}
 \usage{
-cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
-  cn.variance = 0)
+cnMetrics(analysis = NA, gr = NULL, cn.stat = "all",
+  copy.neutral = 0, cn.variance = 0)
 }
 \arguments{
 \item{analysis}{[Character]:  The analysis to perform: "pga" percent genome altered, "wgii" for wGII scores (genomic fraction normalized for chromosome), "pga.wgii" for both,}
@@ -19,6 +19,9 @@ cnMetrics(analysis = NA, gr = NULL, cn.stat = "all", copy.neutral = 0,
 \item{cn.variance}{[Numeric]:  Numeric specifying how much range, if any, should be applied to copy.neutral[default = 0]}
 
 \item{...}{}
+}
+\value{
+null
 }
 \description{
 A wrapper to run copy-number analysis on a GRanges copy-number dataset with copy-number values stored in elementMetadata().  These metrics include calculating genomic fraction and wGII scores (bp) for gains, losses, or any CN-abberation.

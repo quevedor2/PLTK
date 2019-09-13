@@ -5,8 +5,8 @@
 \title{Visualization: plotLikelihoodRatio}
 \usage{
 plotLikelihoodRatio(groups, xmat, f1col = "black", f2col = "red",
-  gen.plot = TRUE, upp.y = 2, low.y = -0.2, parmar = c(5.1, 4.1, 4.1,
-  4.1), addSegments = T, col.idx = NA, ...)
+  gen.plot = TRUE, upp.y = 2, low.y = -0.2, parmar = c(5.1, 4.1,
+  4.1, 4.1), addSegments = T, col.idx = NA, ...)
 }
 \arguments{
 \item{groups}{A list of numerical vectors (groups) or a matrix/dataframe with each column being its own group}

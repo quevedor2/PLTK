@@ -4,8 +4,9 @@
 \alias{addExprScores}
 \title{GR Viz: Plotting function to add Expression ZScores}
 \usage{
-addExprScores(gr.chr, yrange, adj.x, anno.track = 0.25, add.y.axis = FALSE,
-  add.annotations = TRUE, min.anno.gap = 50, add.anno.lines = TRUE, ...)
+addExprScores(gr.chr, yrange, adj.x, anno.track = 0.25,
+  add.y.axis = FALSE, add.annotations = TRUE, min.anno.gap = 50,
+  add.anno.lines = TRUE, ...)
 }
 \arguments{
 \item{gr.chr}{[GRanges]: Input GRanges.  Contains elementMEtadata() columns of "zscore" and "symbol"}

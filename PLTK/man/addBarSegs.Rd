@@ -4,8 +4,9 @@
 \alias{addBarSegs}
 \title{Title}
 \usage{
-addBarSegs(gr.chr, gr, col.ids = c(1), adj.x = 0, cn.colors = c("black"),
-  cn.range = NULL, chr.lines = FALSE, yrange = c(0, 1), y.spacer = 0.1)
+addBarSegs(gr.chr, gr, col.ids = c(1), adj.x = 0,
+  cn.colors = c("black"), cn.range = NULL, chr.lines = FALSE,
+  yrange = c(0, 1), y.spacer = 0.1)
 }
 \arguments{
 \item{gr.chr}{}

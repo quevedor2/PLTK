@@ -4,7 +4,8 @@
 \alias{initializeGrPlot}
 \title{GR Viz: Initializes the parameters for GRanges visualization and Cytoband tracks}
 \usage{
-initializeGrPlot(cytoband.gr, target.chr = NULL, plot.chrom = TRUE, ...)
+initializeGrPlot(cytoband.gr, target.chr = NULL, plot.chrom = TRUE,
+  ...)
 }
 \arguments{
 \item{cytoband.gr}{[GRanges]: A Granges object containing all UCSC cytobands, for example, PLTK::hg19.cytoband}

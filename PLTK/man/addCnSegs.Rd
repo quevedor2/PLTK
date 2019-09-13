@@ -5,8 +5,8 @@
 \title{GR Viz: Plotting function to add copy-number segments}
 \usage{
 addCnSegs(gr.chr, col.ids = c(1), adj.x = 0, cn.colors = c("blue",
-  "white", "red"), cn.range = NULL, chr.lines = FALSE, yrange = c(0, 1),
-  y.spacer = 0.1)
+  "white", "red"), cn.range = NULL, chr.lines = FALSE, yrange = c(0,
+  1), y.spacer = 0.1)
 }
 \arguments{
 \item{gr.chr}{[GRanges]: Copy-number GRanges object with CN data in elementMetadata}
