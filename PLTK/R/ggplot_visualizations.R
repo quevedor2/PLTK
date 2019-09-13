@@ -1,13 +1,18 @@
-#########################
-# Pretty visualizations #
-#########################
-# === Multiplot ===
-# As function states, plot multiple plots onto one figure 
-# Usage: multiplot(p, q) -> p,q in this case are individual plots
-
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  library(grid)
-  
+#' Multiplot
+#' @description As function states, plot multiple plots onto one figure 
+#' 
+#' @param ... ... (e.g., p and q) in this case are individual plots
+#' @param plotlist  No idea?
+#' @param cols  Number of columns
+#' @param layout Matrix specificy layout (cols and rows)
+#'
+#' @return
+#' @importFrom grid grid.newpage pushViewport viewport grid.layout
+#' @export
+#'
+#' @examples 
+#' multiplot(p, q) 
+multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
   # Make a list from the ... arguments and plotlist
   plots <- c(list(...), plotlist)
   
@@ -41,22 +46,22 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-# === ggplot publication quality theme ===
-# https://rpubs.com/Koundy/71792
-# Usage: ggplot(data, aes(x, y)) + theme_Publication()
-
-library(ggplot2)
-library(gridExtra)
-# install.packages("extrafont")
-# library(extrafont)
-# font_import()
-# loadfonts()
-
+#' ggplot publication theme
+#' @description ggplot theme for publication ready Plots: https://rpubs.com/Koundy/71792
+#' 
+#' @param base_size  Default=18
+#' @param base_family Default='helvetica'
+#'
+#' @importFrom ggthemes theme_foundation
+#' @return Theme for ggplot
+#' @export
+#'
+#' @examples
+#' data <- data.frame("A"=letters[1:10], "Val"=1:10)
+#' ggplot(x, aes(x=A, y=Val)) +
+#' geom_point() + 
+#' theme_Publication()
 theme_Publication <- function(base_size=18, base_family="helvetica") {
-  library(grid)
-  # install.packages("ggthemes")
-  library(ggthemes)
-  
   (theme_foundation(base_size=base_size)
   # , base_family=base_family
   + theme(plot.title = element_text(size = rel(1.2), hjust = 0.5),
@@ -91,22 +96,24 @@ theme_Publication <- function(base_size=18, base_family="helvetica") {
 
 # === Colour pallete ===
 # Usage: ggplot(data, aes(x, y)) + scale_fill_Publication()
-scale_fill_Publication <- function(...){
-  library(scales)
-  discrete_scale("fill","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+.scale_fill_Publication <- function(...){
+  require(scales)
+  discrete_scale("fill","Publication",
+                 manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
   
 }
 
-scale_colour_Publication <- function(...){
-  library(scales)
-  discrete_scale("colour","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+.scale_colour_Publication <- function(...){
+require(scales)
+  discrete_scale("colour","Publication",
+                 manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
   
 }
 
 # === Emulate GGPLOT colours ===
 # Usage: gg_color_hue(num)
 # Number will indicate how many colours you want to emulate
-gg_color_hue <- function(n) {
+.gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
