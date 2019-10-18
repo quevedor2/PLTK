@@ -1,6 +1,7 @@
 #install.packages("devtools")
 library(devtools)
 
+test.package=file.path("~/git", "EaCoN")
 test.package=file.path("~/git", "SchramekLOH/SchramekLOH")
 test.package=file.path("~/git", "PLTK/PLTK")
 #devtools::create(test.package)

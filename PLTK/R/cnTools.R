@@ -411,12 +411,12 @@ cnGenomeFraction <- function(analysis, gr, cn.stat='all', copy.neutral, cn.varia
 #' @return NULL
 #' @export
 #'
-collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE){
+collapseSample <- function(gr, sample.idx, na.rm=TRUE, continuous.intervals=TRUE, verbose=F){
   if(sample.idx > ncol(elementMetadata(gr))) stop("Please specify the index of a sample in elementMetadata()")
   if(is.null(sample.idx)) stop("Cannot collapse GRanges without the index of your sample in elementMetadta()")
   
   sample.id <- colnames(elementMetadata(gr))[sample.idx]
-  print(sample.id)
+  if(verbose) print(sample.id)
   
   # Parse out CN information for the sample
   reduce.list <- lapply(as.character(seqnames(gr)@values), function(each.chr){
